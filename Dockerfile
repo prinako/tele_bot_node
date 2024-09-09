@@ -12,4 +12,4 @@ WORKDIR /app
 
 COPY --from=builder /app .
 
-CMD ["node","--env-file=.env" ,"server.js"]
+CMD ["node","--env-file=./sr/.env" ,"./ssrc/server.js"]
