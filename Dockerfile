@@ -12,4 +12,4 @@ WORKDIR /app
 
 COPY --from=builder /app .
 
-CMD ["node" ,"./ssrc/server.js"]
+CMD ["node" ,"./src/server.js"]

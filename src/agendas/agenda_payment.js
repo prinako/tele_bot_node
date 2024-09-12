@@ -1,24 +1,25 @@
 const moment = require('moment');
-const { inlineKeyboard } = require('telegraf/markup');
 
 class AgendaPayment {
     /**
      * Constructor for the AgendaPayment class.
      * Initializes the userState object and the bot instance.
      * @param {TelegramBot} bot - The Telegram bot instance.
+     * @return {void}
      */
     constructor(bot) {
         this.bot = bot; // Store the bot instance
 
         // Initialize state properties
-        this._stage = null;
-        this._selectedMonth = null;
-        this._selectedDay = null;
-        this._selectedTitle = null;
-        this._selectedAmount = null;
-        this._selectedDescription = null;
-        this._selectedPix = null;
-        this._selectedBank = null;
+        this._stage = 'selectMonth'; // Initialize the stage to 'selectMonth'
+        this._selectedMonth = '';
+        this._selectedDay = '';
+        this._selectedTitle = '';
+        this._selectedAmount = '';
+        this._selectedDescription = '';
+        this._selectedPix = '';
+        this._selectedBank = '';
+        this._stageTracker = false;
     }
 
     /**
@@ -102,6 +103,9 @@ class AgendaPayment {
      * @return {string} the selected bank
      */
     get selectedBank() { return this._selectedBank; }
+
+    set stageTracker(v) { this._stageTracker = v; }
+    get stageTracker() { return this._stageTracker; }
 
 
     /**
@@ -190,7 +194,7 @@ class AgendaPayment {
         }, []);
 
         // Map the grouped banks to the format required by the Telegram API
-        return groupedBanks.map(b => b.map(bk => ({ text: bk.text, callback_data: bk.callback_data })));
+        return groupedBanks.map(b => b.map(bk => ({ text: bk.text, callback_data: `bank_${bk.callback_data }`})));
     }
 
     // Function to send a final summary message like the image
@@ -199,7 +203,7 @@ class AgendaPayment {
         const paymentSummary = `⚠️⚠️ *ATTENTION ${this.selectedTitle.toUpperCase()} BILL* ⚠️⚠️\n\n` +
             `R$ ${this.selectedAmount} \n\n` +
             `*Vencimento:* ${dueDate}\n\n` +
-            `Descricão da fatura: \`${this.selectedDescription}\`\n\n` +
+            `Descricão da fatura: ${this.selectedDescription}\n\n` +
             `Pix Chave (${this.selectedBank}): \`${this.selectedPix}\`\n` +
             '---------------------------';
 
@@ -223,6 +227,14 @@ class AgendaPayment {
         const messageThreadId = msg.message_thread_id;
 
         switch (this.stage) {
+            case 'pix':
+                this.selectedPix = userText;
+                this.stage = 'title';
+                this.bot.sendMessage(chatId, 'Por favor, digite o título da fatura:', {
+                    message_thread_id: messageThreadId
+                });
+                return false;
+
             case 'title':
                 this.selectedTitle = userText;
                 this.stage = 'amount';
@@ -241,82 +253,76 @@ class AgendaPayment {
         
             case 'description':
                 this.selectedDescription = userText;
-                this.stage = 'bank';
-                this.bot.sendMessage(chatId, 'Por favor selecione seu banco:', {
-                    message_thread_id: messageThreadId,
-                    reply_markup: {
-                        keyboard: this.generateBankKeyboard(),
-                        resize_keyboard: true,
-                        one_time_keyboard: true
-                    }
-                });
-                return false;
+                this.stage = 'finalSummary';
+                this.sendFinalSummary(chatId, messageThreadId);
+                return true;
+        }
+    }
 
-            case 'bank':
-                this.selectedBank = userText;
-                this.stage = 'pix';
-                this.bot.sendMessage(chatId, 'Por favor digite sua chave PIX:', {
-                    message_thread_id: messageThreadId
-                });
-                return false;
-            
-            case 'pix':
-                this.selectedPix = userText;
-                this.stage = 'selectMonth';
-                this.bot.sendMessage(chatId, 'Qual é o mês de vencimento?', {
-                    message_thread_id: messageThreadId,
-                    reply_markup: {
-                        keyboard: this.generateMonthKeyboard(),
-                        resize_keyboard: true,
-                        one_time_keyboard: true
-                    }
-                });
-                return false;
+    /**
+     * Handles callback queries from the user.
+     * Depending on the current stage of the interaction, the user's response will be handled differently.
+     * @param {Object} callbackQuery - The callback query object sent by the user.
+     */
+    handleKeyboard(callbackQuery) {
+        const msg = callbackQuery.message;
+        const userId = callbackQuery.from.id;
+        const data = callbackQuery.data;
+        const chatId = msg.chat.id;
 
-            case 'selectMonth':
-                const monthIndex = moment.months().indexOf(userText);
-            
-                if (monthIndex === -1) {
-                    this.bot.sendMessage(chatId, 'Por favor escolha um mês válido.', {
-                        message_thread_id: messageThreadId
-                    });
-                    return false;
+        
+        // Handle month selection
+        if (data.startsWith('month_')) {
+            const selectedMonth = data.split('_')[1];
+            this.selectedMonth = moment().month(selectedMonth).format('MM');
+             this.stage = 'selectDay';
+
+            // Send day selection after month
+            const year = moment().year();
+            this.bot.editMessageText(`You selected the month of ${selectedMonth}. Now select the day:`, {
+                chat_id: chatId,
+                message_id: msg.message_id,
+                reply_markup: {
+                    inline_keyboard:  this.generateDayKeyboard(year,  this.selectedMonth)
                 }
+            });
+        }
 
-                const year = moment().year();
-                this.selectedMonth = monthIndex + 1; // Month is 1-indexed
-                this.stage = 'selectDay';
+        // Handle day selection
+        if (data.startsWith('day_')) {
+            const selectedDay = data.split('_')[3];
+             this.selectedDay = selectedDay;
+             this.stage = 'bank';
 
-                this.bot.sendMessage(chatId, `Voce escolheu o mês de ${userText}. Agora escolha o dia:`, {
-                    message_thread_id: messageThreadId,
-                    reply_markup: {
-                        keyboard: this.generateDayKeyboard(year, this.selectedMonth),
-                        resize_keyboard: true,
-                        one_time_keyboard: true
-                    }
-                });
-
-                return false;
-            case 'selectDay':
-                const selectedDay = userText;
-                const month = this.selectedMonth;
-                this.selectedDay = selectedDay;
-
-                const date = `${moment().year()}-${month < 10 ? `0${month}` : month}-${selectedDay}`;
-            
-                if (moment(date, 'YYYY-MM-DD', true).isValid()) {
-                    this.sendFinalSummary(chatId, messageThreadId);
-
-                    // Reset user state after completion
-                    return true;
-                } else {
-                    this.bot.sendMessage(chatId, 'Por favor escolha um dia valido.', {
-                        message_thread_id: messageThreadId
-                    });
-                    return false;
+            // Remove the day keyboard and ask for bank selection
+            this.bot.editMessageText('Por favor selecione seu banco:', {
+                chat_id: chatId,
+                message_id: msg.message_id,
+                reply_markup: {
+                    inline_keyboard:  this.generateBankKeyboard()
                 }
+            });
+        }
+
+        // Handle bank selection
+        if (data.startsWith('bank_')) {
+            const selectedBank = data.split('_')[1];
+             this.selectedBank = selectedBank;
+             this.stage = 'pix';
+
+            // Remove the bank keyboard and ask for PIX key
+            this.bot.editMessageText(`Voce selecionou o banco ${selectedBank}. Por favor digite sua chave PIX:`, {
+                chat_id: chatId,
+                message_id: msg.message_id,
+                reply_markup: {
+                    inline_keyboard: [[]],
+                    remove_keyboard: true
+                }
+            });
         }
     }
 }
+
+
 
 module.exports = { AgendaPayment };

@@ -1,11 +1,12 @@
 const TelegramBot = require('node-telegram-bot-api');
 const { AgendaPayment } = require('./agendas/agenda_payment.js');
 
+
 // Create a new instance of the bot
 const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 
 
-const userClass = {};
+const agendaUsersState = {};
 
 // Command /start to initiate the month selection
 bot.onText(/\/start/, (msg) => {
@@ -18,23 +19,19 @@ bot.onText(/\/start/, (msg) => {
 
 // Command /agenda to initiate the month selection
 bot.onText(/\/agenda/, (msg) => {
-    const chatId = msg.chat.id;
+    const userId = msg.from.id;
 
     // Initialize user state and user class if not already initialized
-    if (!userClass[chatId]) {
-        userClass[chatId] = {};
+    if (!agendaUsersState[userId]) {
+        agendaUsersState[userId] = {};
     }
     
-    userClass[chatId] = new AgendaPayment(bot);
+    agendaUsersState[userId] = new AgendaPayment(bot);
 
-    // Set the current stage of interaction
-    userClass[chatId].stage = 'title';
-
-    bot.sendMessage(chatId, 'Qual é o título da fatura?',{
+    bot.sendMessage(msg.chat.id, 'Vamos registrar o pagamento de fatura em pendente\n\nPor favor, selecione o mês de vencimento:',{
         message_thread_id: msg.message_thread_id,
         reply_markup: {
-            remove_keyboard: true
-        
+            inline_keyboard: agendaUsersState[userId].generateMonthKeyboard()
         }
         });
     });
@@ -42,31 +39,29 @@ bot.onText(/\/agenda/, (msg) => {
 
 // Handle user responses
 bot.on('message', async (msg) => {
-    console.log(msg);
-    const chatId = msg.chat.id;
+    // Get the user ID of the message
+    const userId = msg.from.id;
 
-    // Check if the userClass instance exists for the user
-    if (userClass[chatId]) {
-        const isCompleted = userClass[chatId].handleResponse(msg);
+    if (agendaUsersState[userId] && agendaUsersState[userId].stage === 'pix') {
+        agendaUsersState[userId].stageTracker = true;
+    }
+
+    // Check if the agendaUsersState instance exists for the user
+    if (agendaUsersState[userId] && agendaUsersState[userId].stageTracker) {
+        // Handle the user's response
+        const isCompleted = agendaUsersState[userId].handleResponse(msg);
         // If the process is complete, clean up the state and user class
         if (isCompleted) {
-            delete userClass[chatId];
-            console.log(userClass);
+            delete agendaUsersState[userId];
         }
     }
+})
+
+// Handle callback queries
+bot.on('callback_query', async (callbackQuery) => {
+    const userId = callbackQuery.from.id;
+
+    if (agendaUsersState[userId]) {
+        agendaUsersState[userId].handleKeyboard(callbackQuery);
+    }
 });
-
-// bot.on('callback_query', (query) => {
-//     console.log(query);
-//     const chatId = query.message.chat.id;
-
-//     // Check if the userClass instance exists for the user
-//     if (userClass[chatId]) {
-//         const isCompleted = userClass[chatId].handleResponse(query);
-//         // If the process is complete, clean up the state and user class
-//         if (isCompleted) {
-//             delete userClass[chatId];
-//             console.log(userClass);
-//         }
-//     }
-// });
