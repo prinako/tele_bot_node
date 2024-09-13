@@ -1,4 +1,5 @@
 const moment = require('moment');
+const { insetAgendaPayment} = require('../../DB/querys/querys.js');
 
 class AgendaPayment {
     /**
@@ -198,7 +199,7 @@ class AgendaPayment {
     }
 
     // Function to send a final summary message like the image
-    sendFinalSummary(chatId, messageThreadId) {
+    async sendFinalSummary(chatId, messageThreadId, userId) {
         const dueDate = `${this.selectedDay}/${this.selectedMonth}/${moment().year()}`;
         const paymentSummary = `⚠️⚠️ *ATTENTION ${this.selectedTitle.toUpperCase()} BILL* ⚠️⚠️\n\n` +
             `R$ ${this.selectedAmount} \n\n` +
@@ -207,6 +208,25 @@ class AgendaPayment {
             `Pix Chave (${this.selectedBank}): \`${this.selectedPix}\`\n` +
             '---------------------------';
 
+        const isInseted = await insetAgendaPayment(
+            {
+                chatId: chatId,
+                senderId: userId,
+                messageThreadId: messageThreadId,
+                date: dueDate,
+                title:    this.selectedTitle,
+                amount: this.selectedAmount,
+                description: this.selectedDescription,
+                pix: this.selectedPix,
+                bank: this.selectedBank
+            } 
+        );
+
+        if (!isInseted) {
+            return;
+        }
+
+        // Send the summary message
         this.bot.sendMessage(chatId, paymentSummary, {
             message_thread_id: messageThreadId,
             parse_mode: 'Markdown',
@@ -223,6 +243,7 @@ class AgendaPayment {
      */
     handleResponse(msg) {
         const chatId = msg.chat.id;
+        const userId = msg.from.id;
         const userText = msg.text;
         const messageThreadId = msg.message_thread_id;
 
@@ -254,7 +275,7 @@ class AgendaPayment {
             case 'description':
                 this.selectedDescription = userText;
                 this.stage = 'finalSummary';
-                this.sendFinalSummary(chatId, messageThreadId);
+                this.sendFinalSummary(chatId, messageThreadId, userId);
                 return true;
         }
     }
