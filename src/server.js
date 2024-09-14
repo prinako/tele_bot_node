@@ -1,12 +1,13 @@
 const TelegramBot = require('node-telegram-bot-api');
-const { AgendaPayment } = require('./agendas/agenda_payment.js');
-
+const AgendaPayment = require('./agendas/agenda_payment.js');
+const EditAgenda = require('./agendas/edit_agenda.js');
 
 // Create a new instance of the bot
 const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 
 
 const agendaUsersState = {};
+const edetAgendaUsersState = {};
 
 // Command /start to initiate the month selection
 bot.onText(/\/start/, (msg) => {
@@ -34,7 +35,19 @@ bot.onText(/\/agenda/, (msg) => {
             inline_keyboard: agendaUsersState[userId].generateMonthKeyboard()
         }
         });
-    });
+});
+
+bot.onText(/\/cancel/, (msg) => {});
+
+bot.onText(/\/help/, (msg) => {});
+
+bot.onText(/\/edit/, async(msg) => {
+    const userId = msg.from.id;
+    edetAgendaUsersState[userId] = new EditAgenda(bot);
+
+    edetAgendaUsersState[userId].editAgenda(msg);
+   
+});
 
 
 // Handle user responses
@@ -63,5 +76,9 @@ bot.on('callback_query', async (callbackQuery) => {
 
     if (agendaUsersState[userId]) {
         agendaUsersState[userId].handleKeyboard(callbackQuery);
+    }
+
+    if (edetAgendaUsersState[userId]) {
+        edetAgendaUsersState[userId].handleEditAgenda(callbackQuery);
     }
 });

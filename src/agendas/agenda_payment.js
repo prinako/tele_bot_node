@@ -1,5 +1,6 @@
 const moment = require('moment');
-const { insetAgendaPayment} = require('../../DB/querys/querys.js');
+const { insetAgendaPayment} = require('../DB/querys/querys.js');
+const agendaFormatter = require('../utilities/agenda_formatter.js');
 
 class AgendaPayment {
     /**
@@ -200,40 +201,39 @@ class AgendaPayment {
 
     // Function to send a final summary message like the image
     async sendFinalSummary(chatId, messageThreadId, userId) {
+
         const dueDate = `${this.selectedDay}/${this.selectedMonth}/${moment().year()}`;
-        const paymentSummary = `⚠️⚠️ *ATTENTION ${this.selectedTitle.toUpperCase()} BILL* ⚠️⚠️\n\n` +
-            `R$ ${this.selectedAmount} \n\n` +
-            `*Vencimento:* ${dueDate}\n\n` +
-            `Descricão da fatura: ${this.selectedDescription}\n\n` +
-            `Pix Chave (${this.selectedBank}): \`${this.selectedPix}\`\n` +
-            '---------------------------';
-
-        const isInseted = await insetAgendaPayment(
-            {
-                chatId: chatId,
-                senderId: userId,
-                messageThreadId: messageThreadId,
-                date: dueDate,
-                title:    this.selectedTitle,
-                amount: this.selectedAmount,
-                description: this.selectedDescription,
-                pix: this.selectedPix,
-                bank: this.selectedBank
-            } 
-        );
-
-        if (!isInseted) {
-            return;
-        }
-
-        // Send the summary message
-        this.bot.sendMessage(chatId, paymentSummary, {
+        const dataToDB = {
+            chatId: chatId,
+            senderId: userId,
+            messageThreadId: messageThreadId,
+            date: dueDate,
+            title: this.selectedTitle,
+            amount: this.selectedAmount,
+            description: this.selectedDescription,
+            pix: this.selectedPix,
+            bank: this.selectedBank
+        } 
+        const paymentSummary = agendaFormatter(dataToDB);
+        
+        await insetAgendaPayment( dataToDB ,(isInseted) =>{
+            if (!isInseted) {
+                this.bot.sendMessage(chatId, 'Houve um erro ao registrar a fatura. Por favor, tente novamente mais tarde.', {
+                    message_thread_id: messageThreadId
+                });
+                return true;
+            }
+            // Send the summary message
+            this.bot.sendMessage(chatId, paymentSummary, {
             message_thread_id: messageThreadId,
             parse_mode: 'Markdown',
             reply_markup: {
-                remove_keyboard: true
-            }
+                    remove_keyboard: true
+                }
+            });
+
         });
+        return true;
     }
 
     /**
@@ -346,4 +346,4 @@ class AgendaPayment {
 
 
 
-module.exports = { AgendaPayment };
+module.exports = AgendaPayment;

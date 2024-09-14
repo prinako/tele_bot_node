@@ -3,16 +3,15 @@ const Schema = mongoose.Schema;
 
 const agendaPaymentSchema = new Schema({
     chatId: {
-        type: String,
+        type: Number,
         required: true
     },
     senderId: {
-        type: String,
+        type: Number,
         required: true
     },
     messageThreadId: {
-        type: String,
-        required: true
+        type: Number,
     },
     date: {
         type: String,
