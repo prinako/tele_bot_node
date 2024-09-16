@@ -13,6 +13,9 @@ const agendaPaymentSchema = new Schema({
     messageThreadId: {
         type: Number,
     },
+    topicId:{
+        type: Number,
+    },
     date: {
         type: String,
         required: true
@@ -36,6 +39,18 @@ const agendaPaymentSchema = new Schema({
     bank: {
         type: String,
         required: true
+    },
+    sadat: {
+        type: Boolean,
+        default: false
+    },
+    sam: {
+        type: Boolean,
+        default: false
+    },
+    prince: {
+        type: Boolean,
+        default: false
     },
     isPaid: {
         type: Boolean,

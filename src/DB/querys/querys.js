@@ -16,11 +16,11 @@ async function insetAgendaPayment(data, next) {
     // Create a new instance of the AgendaPaymentSchema model
     const agenda = new AgendaPaymentSchema(data);
     // Save the document to the collection
-    await agenda.save().then(async () => {
+    await agenda.save().then(async (dou) => {
         // Disconnect from the database
         await disconnectDB();
         // Call the callback with true, indicating that the document was inserted successfully
-        return next(true);
+        return next(dou);
     }).catch(async err => {
         // Log any errors that occurred
         console.log(err);
@@ -38,7 +38,7 @@ async function insetAgendaPayment(data, next) {
  * @param {Function} next - A callback function that will be called with the result of the query.
  * @return {Promise} A promise that resolves with the result of the query, or rejects if there was an error.
  */
-async function getAllAgendaPayment(senderId, next) {
+async function getAllAgendaPaymentBySender(senderId, next) {
     const connect = await connectDB();
     if (connect) {
         // Find all documents that match the given senderId and isPaid = false
@@ -46,6 +46,29 @@ async function getAllAgendaPayment(senderId, next) {
             senderId: senderId,
             isPaid: false
         }).exec()
+        .then(async (result) => {
+            // Disconnect from the database
+            await disconnectDB();
+            // Call the callback with the result of the query
+            return next(result);
+        })
+        .catch(async err => {
+            // Log any errors that occurred
+            console.log(err);
+            // Disconnect from the database
+            await disconnectDB();
+            // Call the callback with false, indicating that there was an error
+            return next(false);
+        });
+    }
+    return next(false);
+}
+
+async function getAllAgendaPayment(next){
+    const connect = await connectDB();
+    if(connect){
+        // Find all documents that match the given senderId and isPaid = false
+        await AgendaPaymentSchema.find({}).exec()
         .then(async (result) => {
             // Disconnect from the database
             await disconnectDB();
@@ -93,6 +116,7 @@ async function deleteAgendaPayment() {}
 module.exports = {
     insetAgendaPayment,
     getAllAgendaPayment,
+    getAllAgendaPaymentBySender,
     deleteAgendaPayment,
     updateAgendaPayment,
 }

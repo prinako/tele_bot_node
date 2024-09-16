@@ -1,5 +1,6 @@
 const {getAllAgendaPayment, } = require('../DB/querys/querys.js');
 const agendaFormatter = require('../utilities/agenda_formatter.js');
+const allAgendaAsKeyboard = require('../utilities/all_agenda_as_keyboard.js');
 
 class EditAgenda {
       /**
@@ -56,29 +57,8 @@ class EditAgenda {
     }
 
     async editAgendasAsKeyboard(msg) {
-        await getAllAgendaPayment(msg.from.id, (result) => {
-            
-            if(result) {
-                const allAgendaList= [];
-                result.forEach(d => {
-                    allAgendaList.push({
-                        text: `${d.title}\n${d.date}`, callback_data: d.id
-                    })
-
-                });
-                const groupedAgenda = allAgendaList.reduce((acc, cur, idx) => {
-                    if(idx % 2=== 0) {
-                        acc.push([cur])
-                    }else{
-                        acc[acc.length - 1].push(cur);
-                    }
-                    return acc;
-                },[]);
-
-                const buttons = groupedAgenda.map(b => b.map(bk => ({
-                    text: bk.text,
-                    callback_data: `agenda_${bk.callback_data}`
-                })))
+        await allAgendaAsKeyboard(msg.from.id,'agenda', (buttons) => {
+            if(buttons) {
 
                 this.bot.sendMessage(msg.chat.id, 'Vamos editar o pagamento de fatura em pendente\n\nPor favor, selecione o mês de vencimento:',{
                     message_thread_id: msg.message_thread_id,

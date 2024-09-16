@@ -130,3 +130,5 @@ dist
 .pnp.*
 
 log.*
+
+/src/allowed_users/*.json

@@ -12,4 +12,8 @@ WORKDIR /app
 
 COPY --from=builder /app .
 
+RUN mkdir -p /app/src/allowed_users
+
+# VOLUME ['./app/src/allowed_users']
+
 CMD ["node" ,"./src/server.js"]

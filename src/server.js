@@ -1,13 +1,19 @@
 const TelegramBot = require('node-telegram-bot-api');
 const AgendaPayment = require('./agendas/agenda_payment.js');
-const EditAgenda = require('./agendas/edit_agenda.js');
+const SomeonePaid = require('./agendas/someone_piad.js');
+const SchedulesEveryday = require('./schedules/schedules_everyday.js');
+const allowedUsers = require('./auth/auth.js');
+const userHasNoPermition = require('./utilities/has_no_permition.js');
+
+
 
 // Create a new instance of the bot
 const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 
+new SchedulesEveryday(bot);
 
 const agendaUsersState = {};
-const edetAgendaUsersState = {};
+const piadState = {};
 
 // Command /start to initiate the month selection
 bot.onText(/\/start/, (msg) => {
@@ -21,12 +27,14 @@ bot.onText(/\/start/, (msg) => {
 // Command /agenda to initiate the month selection
 bot.onText(/\/agenda/, (msg) => {
     const userId = msg.from.id;
-
-    // Initialize user state and user class if not already initialized
-    if (!agendaUsersState[userId]) {
+    
+    if (agendaUsersState[userId]) {
         agendaUsersState[userId] = {};
     }
-    
+    if (!allowedUsers(userId)) {
+        userHasNoPermition(bot, msg);
+        return;
+    }
     agendaUsersState[userId] = new AgendaPayment(bot);
 
     bot.sendMessage(msg.chat.id, 'Vamos registrar o pagamento de fatura em pendente\n\nPor favor, selecione o mês de vencimento:',{
@@ -34,21 +42,75 @@ bot.onText(/\/agenda/, (msg) => {
         reply_markup: {
             inline_keyboard: agendaUsersState[userId].generateMonthKeyboard()
         }
-        });
+    });
 });
 
-bot.onText(/\/cancel/, (msg) => {});
-
-bot.onText(/\/help/, (msg) => {});
-
-bot.onText(/\/edit/, async(msg) => {
+bot.onText(/\/cancel/, (msg) => {
     const userId = msg.from.id;
-    edetAgendaUsersState[userId] = new EditAgenda(bot);
 
-    edetAgendaUsersState[userId].editAgenda(msg);
-   
+    if (!allowedUsers(userId)) {
+        userHasNoPermition(bot, msg);
+        return;
+    }
+
+    if (agendaUsersState[userId]) {
+        delete agendaUsersState[userId];
+    }
+    if (piadState[userId]) {
+        delete piadState[userId];
+    }
+    bot.sendMessage(msg.chat.id, 'Operação cancelada', {
+        message_thread_id: msg.message_thread_id
+    });
 });
 
+bot.onText(/\/help/, (msg) => {
+    // const chatId = msg.chat.id;
+    if (!allowedUsers(msg.from.id)) {
+        bot.sendMessage(msg.chat.id, `Comandos disponíveis para ${msg.from.first_name}:\n /ia - Para conversar com a inteligência artificial.\n`,{
+            message_thread_id: msg.message_thread_id,
+            chat_id: msg.chat.id,
+            message_id: msg.message_id,
+        } );
+        return;
+    }
+
+    bot.sendMessage(msg.chat.id, `Comandos disponíveis para ${msg.from.first_name}:\n /agenda - Para registrar o pagamento de fatura em pendente.\n /cancel - Para cancelar a operação atual.\n /pagou - Para adicionar quem pagou a parte ele.\n /delete - Para deletar o fatura que foi registrada.\n /whopaid - Para saber quem pagou`, {
+        message_thread_id: msg.message_thread_id,
+        chat_id: msg.chat.id,
+        message_id: msg.message_id,
+    });
+});
+
+bot.onText(/\/whopaid/, (msg) => {
+    const userId = msg.from.id;
+    if (!allowedUsers(userId)) {
+        userHasNoPermition(bot, msg);
+        return;
+    }
+
+    if (piadState[userId]) {
+        piadState[userId] = {};
+    }
+    piadState[userId] = new SomeonePaid(bot);
+    piadState[userId].addWhoPaid(msg);
+});
+
+bot.onText(/\/pagou/, (msg) => {
+    const userId = msg.from.id;
+    if (!allowedUsers(userId)) {
+        userHasNoPermition(bot, msg);
+        return;
+    }
+});
+
+bot.onText(/\/delete/, (msg) => {
+    const userId = msg.from.id;
+    if (!allowedUsers(userId)) {
+        userHasNoPermition(bot, msg);
+        return;
+    }
+})
 
 // Handle user responses
 bot.on('message', async (msg) => {
@@ -77,8 +139,7 @@ bot.on('callback_query', async (callbackQuery) => {
     if (agendaUsersState[userId]) {
         agendaUsersState[userId].handleKeyboard(callbackQuery);
     }
-
-    if (edetAgendaUsersState[userId]) {
-        edetAgendaUsersState[userId].handleEditAgenda(callbackQuery);
+    if (piadState[userId]) {
+        piadState[userId].handlePaid(callbackQuery);
     }
 });

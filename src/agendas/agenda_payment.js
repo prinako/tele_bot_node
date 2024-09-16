@@ -22,6 +22,10 @@ class AgendaPayment {
         this._selectedPix = '';
         this._selectedBank = '';
         this._stageTracker = false;
+        this.chat_id = '';
+        this.message_id = '';
+        this.message_thread_id = '';
+        this._selectedTopicId = process.env.BILLS_THREAD_ID;
     }
 
     /**
@@ -109,6 +113,17 @@ class AgendaPayment {
     set stageTracker(v) { this._stageTracker = v; }
     get stageTracker() { return this._stageTracker; }
 
+    set chat_id(v) { this._chat_id = v; }
+    get chat_id() { return this._chat_id; }
+
+    set message_id(v) { this._message_id = v; }
+    get message_id() { return this._message_id; }
+
+    set message_thread_id(v) { this._message_thread_id = v; }
+    get message_thread_id() { return this._message_thread_id; }
+
+    set selectedTopicId(v) { this._selectedTopicId = v; }
+    get selectedTopicId() { return this._selectedTopicId; }
 
     /**
      * Generates a keyboard for selecting months.
@@ -204,9 +219,10 @@ class AgendaPayment {
 
         const dueDate = `${this.selectedDay}/${this.selectedMonth}/${moment().year()}`;
         const dataToDB = {
-            chatId: chatId,
+            chatId: process.env.CHAT_ID,
             senderId: userId,
             messageThreadId: messageThreadId,
+            topicId: this.selectedTopicId,
             date: dueDate,
             title: this.selectedTitle,
             amount: this.selectedAmount,
@@ -214,7 +230,6 @@ class AgendaPayment {
             pix: this.selectedPix,
             bank: this.selectedBank
         } 
-        const paymentSummary = agendaFormatter(dataToDB);
         
         await insetAgendaPayment( dataToDB ,(isInseted) =>{
             if (!isInseted) {
@@ -223,9 +238,10 @@ class AgendaPayment {
                 });
                 return true;
             }
+            const paymentSummary = agendaFormatter(isInseted);
             // Send the summary message
-            this.bot.sendMessage(chatId, paymentSummary, {
-            message_thread_id: messageThreadId,
+            this.bot.sendMessage(isInseted.chatId, paymentSummary, {
+            message_thread_id: this.selectedTopicId,
             parse_mode: 'Markdown',
             reply_markup: {
                     remove_keyboard: true
@@ -291,6 +307,9 @@ class AgendaPayment {
         const data = callbackQuery.data;
         const chatId = msg.chat.id;
 
+        this.chat_id = chatId;
+        this.message_id = msg.message_id;
+        this.message_thread_id = msg.message_thread_id;
         
         // Handle month selection
         if (data.startsWith('month_')) {
@@ -301,8 +320,8 @@ class AgendaPayment {
             // Send day selection after month
             const year = moment().year();
             this.bot.editMessageText(`You selected the month of ${selectedMonth}. Now select the day:`, {
-                chat_id: chatId,
-                message_id: msg.message_id,
+                chat_id: this.chat_id,
+                message_id: this.message_id,
                 reply_markup: {
                     inline_keyboard:  this.generateDayKeyboard(year,  this.selectedMonth)
                 }
@@ -317,13 +336,15 @@ class AgendaPayment {
 
             // Remove the day keyboard and ask for bank selection
             this.bot.editMessageText('Por favor selecione seu banco:', {
-                chat_id: chatId,
-                message_id: msg.message_id,
+                chat_id: this.chat_id,
+                message_id: this.message_id,
                 reply_markup: {
                     inline_keyboard:  this.generateBankKeyboard()
                 }
             });
         }
+
+        
 
         // Handle bank selection
         if (data.startsWith('bank_')) {
@@ -333,14 +354,23 @@ class AgendaPayment {
 
             // Remove the bank keyboard and ask for PIX key
             this.bot.editMessageText(`Voce selecionou o banco ${selectedBank}. Por favor digite sua chave PIX:`, {
-                chat_id: chatId,
-                message_id: msg.message_id,
+                chat_id: this.chat_id,
+                message_id: this.message_id,
                 reply_markup: {
                     inline_keyboard: [[]],
                     remove_keyboard: true
                 }
             });
         }
+
+        // if (data.startsWith('repeat_')) {
+        //     const selectedRepeat = data.split('_')[1];
+        //     this.selectedRepeat = selectedRepeat;
+        //     this.stage = 'finalSummary';
+        //     this.sendFinalSummary(chatId, messageThreadId, userId);
+        //     return true;
+        
+        // }
     }
 }
 
