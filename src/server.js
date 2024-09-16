@@ -2,6 +2,7 @@ const TelegramBot = require('node-telegram-bot-api');
 const AgendaPayment = require('./agendas/agenda_payment.js');
 const SomeonePaid = require('./agendas/someone_piad.js');
 const SchedulesEveryday = require('./schedules/schedules_everyday.js');
+const Paid = require('./agendas/paid.js');
 const allowedUsers = require('./auth/auth.js');
 const userHasNoPermition = require('./utilities/has_no_permition.js');
 
@@ -14,6 +15,8 @@ new SchedulesEveryday(bot);
 
 const agendaUsersState = {};
 const piadState = {};
+const pagouState = {};
+
 
 // Command /start to initiate the month selection
 bot.onText(/\/start/, (msg) => {
@@ -102,6 +105,8 @@ bot.onText(/\/pagou/, (msg) => {
         userHasNoPermition(bot, msg);
         return;
     }
+    pagouState[userId] = new Paid(bot);
+    pagouState[userId].paid(msg);
 });
 
 bot.onText(/\/delete/, (msg) => {

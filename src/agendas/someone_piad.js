@@ -138,7 +138,8 @@ class SomeonePaid {
                     const data = {
                         sadat: true,
                         sam: true,
-                        prince: true
+                        prince: true,
+                        isPaid: true
                     }
                     await this.addToDatabase(callbackQuery, data);
                 }
