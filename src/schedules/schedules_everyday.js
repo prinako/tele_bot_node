@@ -22,7 +22,7 @@ class SchedulesEveryday {
      * @return {void}
      */
     runEveryday() {
-        cron.schedule('* 9 * * *', async () => {
+        cron.schedule('0 9 * * *', async () => {
             // Check if there are any agendas that need to be notified
             this._checkIfNeedToNotify();
         });
