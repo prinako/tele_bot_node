@@ -1,4 +1,4 @@
-const {updateAgendaPayment } = require('../DB/querys/querys.js');
+const {updateAgendaPayment, getAgendaPaymentById } = require('../DB/querys/querys.js');
 const agendaFormatter = require('../utilities/agenda_formatter.js');
 const allAgendaAsKeyboard = require('../utilities/all_agenda_as_keyboard.js');
 
@@ -14,11 +14,23 @@ class SomeonePaid {
 
         // Initialize state properties
         this._selectedAgendaId = '';
+        this._prince = false;
+        this._sam = false;
+        this._sadat = false;
     }
 
     get selectedAgendaId() { return this._selectedAgendaId; } 
     set selectedAgendaId(v) { this._selectedAgendaId = v; }
 
+    get prince() { return this._prince; }
+    set prince(v) { this._prince = v; }
+
+    get sam() { return this._sam; }
+    set sam(v) { this._sam = v; }
+
+    get sadat() { return this._sadat; }
+    set sadat(v) { this._sadat = v; }
+ 
     /**
      * Retrieves all agendas from the database and generates a keyboard for the user to select who paid.
      * @param {Message} msg - The Telegram message object.
@@ -63,22 +75,28 @@ class SomeonePaid {
             ],
             [ /* Sadat has paid */
                 {
-                    text: 'Sadat',
+                    text: this.sadat ? 'Sadat ✅' : 'Sadat ❌',
                     callback_data: 'sadat'
                 },
             ],
             [ /* Sam has paid */
                 {
-                    text: 'Sam',
+                    text: this.sam ? 'Sam ✅' : 'Sam ❌',
                     callback_data: 'sam'
                 },
             ],
             [ /* Prince has paid */
                 {
-                    text: 'Prince',
+                    text: this.prince ? 'Prince ✅' : 'Prince ❌',
                     callback_data: 'prince'
                 }
             ],
+            [
+                {
+                    text: 'Confirmar',
+                    callback_data: 'done'
+                }
+            ]
         ]
         return options
     }
@@ -117,15 +135,18 @@ class SomeonePaid {
         const userId = callbackQuery.from.id;
         const data = callbackQuery.data;
         const messageThreadId = callbackQuery.message_thread_id;
-
+        
+        console.log(data)
         // If the user selected an agenda, show the list of people who paid
         if (data.startsWith('someonePaid_')) {
             this.selectedAgendaId = data.split('_')[1];
-            this.bot.editMessageText(`Por favor, selecione o quem pagou:`, {
-                chat_id: msg.chat.id,
-                message_id: msg.message_id,
-                reply_markup: {
-                    inline_keyboard: this.listOfMenbersAsKeyboard()
+            await getAgendaPaymentById(this.selectedAgendaId, (result) => {
+                if (result) {
+                    this.sadat = result.sadat
+                    this.sam = result.sam
+                    this.prince = result.prince
+
+                    this.resend(msg)
                 }
             })
         }
@@ -135,11 +156,14 @@ class SomeonePaid {
             case 'all':
                 // If the user selected "all", set all members as true
                 {
+                    this.prince = true
+                    this.sam = true
+                    this.sadat = true
+
                     const data = {
-                        sadat: true,
-                        sam: true,
-                        prince: true,
-                        isPaid: true
+                        sadat: this.sadat,
+                        sam: this.sam,
+                        prince: this.prince
                     }
                     await this.addToDatabase(callbackQuery, data);
                 }
@@ -147,31 +171,50 @@ class SomeonePaid {
             case 'sadat':
                 // If the user selected "Sadat", set Sadat as true
                 {
-                    const data = {
-                        sadat: true
-                    }
-                    await this.addToDatabase(callbackQuery, data);
+                    this.sadat = !this.sadat
+                    this.resend(msg)
                 }
                 break
             case 'sam':
                 // If the user selected "Sam", set Sam as true
                 {
-                    const data = {
-                        sam: true
-                    }
-                    await this.addToDatabase(callbackQuery, data);
+                    this.sam = !this.sam
+                    this.resend(msg)
                 }
                 break
             case 'prince':
                 // If the user selected "Prince", set Prince as true
                 {
+                    this.prince = !this.prince
+                    this.resend(msg)
+                }
+                break
+            case 'done':
+                {
                     const data = {
-                        prince: true
+                        sadat: this.sadat,
+                        sam: this.sam,
+                        prince: this.prince
                     }
                     await this.addToDatabase(callbackQuery, data);
                 }
                 break
         }
+    }
+
+    /**
+     * Re-sends the message with the list of people who paid.
+     * Used to re-show the list after a user selects an agenda.
+     * @param {Object} msg - The Telegram message object.
+     */
+    resend(msg) {
+        this.bot.editMessageText(`Por favor, selecione o quem pagou:`, {
+            chat_id: msg.chat.id,
+            message_id: msg.message_id,
+            reply_markup: {
+                inline_keyboard: this.listOfMenbersAsKeyboard()
+            }
+        })
     }
 }
 

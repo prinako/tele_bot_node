@@ -1,5 +1,6 @@
-const { getAllAgendaPayment, getAllAgendaPaymentBySender } = require("../DB/querys/querys");
+const { updateAgendaPayment } = require("../DB/querys/querys");
 const allAgendaAsKeyboard = require("../utilities/all_agenda_as_keyboard");
+const agendaFormatter = require("../utilities/agenda_formatter");
 
 class paid{
     constructor(bot){
@@ -34,10 +35,11 @@ class paid{
     }
     async addToDatabase(callbackQuery, data){
         const msg = callbackQuery.message;
+        const topicId = process.env.PAID_THREAD_ID;
         await updateAgendaPayment(this.selectedAgendaId, data, (updateAgenda) => {
             if(updateAgenda) {
-                const formattedAgenda = agendaFormatter(updateAgenda);
-                this.bot.editMessageText(formattedAgenda, {
+                const alert =  `A conta deª *${updateAgenda.title}* no valor de *${updateAgenda.amount}* com vencimento para *${updateAgenda.date}* foi marcada como paga. ✅`;
+                this.bot.editMessageText(alert, {
                     chat_id: msg.chat.id,
                     message_id: msg.message_id,
                     parse_mode: 'Markdown',
@@ -46,8 +48,10 @@ class paid{
                         remove_keyboard: true
                     },
                 });
-                this.bot.sendMessage(updateAgenda.chatId,formattedAgenda, {
-                    message_thread_id: updateAgenda.topicId,
+
+
+                this.bot.sendMessage(updateAgenda.chatId, alert, {
+                    message_thread_id: topicId,
                     message_id: updateAgenda.messageThreadId,
                     parse_mode: 'Markdown',
 
@@ -61,7 +65,6 @@ class paid{
         const data = callbackQuery.data;
         const chatId = callbackQuery.message.chat.id;
         const message_id = callbackQuery.message.message_id;
-
         if(data.startsWith('paid_')){
             this.selectedAgendaId = data.split('_')[1];
 

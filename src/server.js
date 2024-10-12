@@ -3,6 +3,7 @@ const AgendaPayment = require('./agendas/agenda_payment.js');
 const SomeonePaid = require('./agendas/someone_piad.js');
 const SchedulesEveryday = require('./schedules/schedules_everyday.js');
 const Paid = require('./agendas/paid.js');
+const Pix = require('./agendas/add_pix_to_db.js');
 const allowedUsers = require('./auth/auth.js');
 const userHasNoPermition = require('./utilities/has_no_permition.js');
 
@@ -16,6 +17,8 @@ new SchedulesEveryday(bot);
 const agendaUsersState = {};
 const piadState = {};
 const pagouState = {};
+const pixState = {};
+
 
 
 // Command /start to initiate the month selection
@@ -61,6 +64,9 @@ bot.onText(/\/cancel/, (msg) => {
     }
     if (piadState[userId]) {
         delete piadState[userId];
+    }
+    if (pixState[userId]) {
+        delete pixState[userId];
     }
     bot.sendMessage(msg.chat.id, 'Operação cancelada', {
         message_thread_id: msg.message_thread_id
@@ -109,6 +115,18 @@ bot.onText(/\/pagou/, (msg) => {
     pagouState[userId].paid(msg);
 });
 
+bot.onText(/\/registerpix/, (msg) => {
+    const userId = msg.from.id;
+
+    if (!allowedUsers(userId)) {
+        userHasNoPermition(bot, msg);
+        return;
+    }
+
+    pixState[userId] = new Pix(bot);
+    pixState[userId].addPix(msg);
+})
+
 bot.onText(/\/delete/, (msg) => {
     const userId = msg.from.id;
     if (!allowedUsers(userId)) {
@@ -122,7 +140,7 @@ bot.on('message', async (msg) => {
     // Get the user ID of the message
     const userId = msg.from.id;
 
-    if (agendaUsersState[userId] && agendaUsersState[userId].stage === 'pix') {
+    if (agendaUsersState[userId] && (agendaUsersState[userId].stage === 'title' || agendaUsersState[userId].stage === 'newPix') ) {
         agendaUsersState[userId].stageTracker = true;
     }
 
@@ -133,6 +151,13 @@ bot.on('message', async (msg) => {
         // If the process is complete, clean up the state and user class
         if (isCompleted) {
             delete agendaUsersState[userId];
+        }
+    }
+
+    if (pixState[userId] && pixState[userId].isStagePixChave) {
+        const isCompleted = pixState[userId].handleResponse(msg);
+        if (isCompleted) {
+            delete pixState[userId];
         }
     }
 })
@@ -146,5 +171,11 @@ bot.on('callback_query', async (callbackQuery) => {
     }
     if (piadState[userId]) {
         piadState[userId].handlePaid(callbackQuery);
+    }
+    if (pixState[userId]) {
+        pixState[userId].handlePix(callbackQuery);
+    }
+    if (pagouState[userId]) {
+        pagouState[userId].handlePaid(callbackQuery);
     }
 });

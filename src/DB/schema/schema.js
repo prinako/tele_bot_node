@@ -60,8 +60,30 @@ const agendaPaymentSchema = new Schema({
     timestamps: true
 });
 
+const pixSchema = new Schema({
+    pix: {
+        type: String,
+        required: true,
+    },
+    senderId: {
+        type: Number,
+        required: true
+    },
+    bank: {
+        type: String,
+        required: true
+    }
+}, {
+    timestamps: true,
+});
+
+pixSchema.index({ pix: 1}, { unique: true });
+
 
 const AgendaPaymentSchema = mongoose.model('AgendaPayment', agendaPaymentSchema);
+const PixSchema = mongoose.model('Pix', pixSchema);
+
 module.exports = {
     AgendaPaymentSchema,
+    PixSchema,
 }

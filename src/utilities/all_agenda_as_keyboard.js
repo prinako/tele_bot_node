@@ -1,33 +1,21 @@
 const { getAllAgendaPaymentBySender } = require("../DB/querys/querys");
+const generateBtn = require("../utilities/generate_btn.js");
 
-async function allAgendaAsKeyboard(userID,name, next) {
+/**
+ * Retrieves all agendas from the database and generates a keyboard for the user to select which one to proceed with.
+ * @param {number} userID - The Telegram user ID.
+ * @param {string} name - The namespace to be used for the callback_data.
+ * @param {Function} next - The callback function to call with the generated buttons.
+ * @return {Promise<void>}
+ */
+async function allAgendaAsKeyboard(userID, name, next) {
+    // Get all agendas from the database
     await getAllAgendaPaymentBySender(userID, (result) => {
-            
-        if(result) {
-            const allAgendaList= [];
-            result.forEach(d => {
-                allAgendaList.push({
-                    text: `${d.title}\n${d.date}`, callback_data: d.id
-                })
-
-            });
-            const groupedAgenda = allAgendaList.reduce((acc, cur, idx) => {
-                if(idx % 2=== 0) {
-                    acc.push([cur])
-                }else{
-                    acc[acc.length - 1].push(cur);
-                }
-                return acc;
-            },[]);
-
-            const buttons = groupedAgenda.map(b => b.map(bk => ({
-                text: bk.text,
-                callback_data: `${name}_${bk.callback_data}`
-            })))
-            return next(buttons);
+        if (result) {
+            // Generate a keyboard with the agendas
+            generateBtn(result, name, next);
         }
-
-    })
+    });
 }
 
 module.exports = allAgendaAsKeyboard
