@@ -73,7 +73,7 @@ async function getAllAgendaPayment(next) {
     const connect = await connectDB();
     if (connect) {
         // Find all documents in the AgendaPayment collection
-        await AgendaPaymentSchema.find({}).exec()
+        await AgendaPaymentSchema.find({isPaid: false}).exec()
             .then(async (result) => {
                 // Disconnect from the database
                 await disconnectDB();
