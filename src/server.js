@@ -20,6 +20,27 @@ const pagouState = {};
 const pixState = {};
 
 
+bot.onText(/\/cancel/, (msg) => {
+    const userId = msg.from.id;
+
+    if (!allowedUsers(userId)) {
+        userHasNoPermition(bot, msg);
+        return;
+    }
+
+    if (agendaUsersState[userId]) {
+        delete agendaUsersState[userId];
+    }
+    if (piadState[userId]) {
+        delete piadState[userId];
+    }
+    if (pixState[userId]) {
+        delete pixState[userId];
+    }
+    bot.sendMessage(msg.chat.id, 'Operação cancelada', {
+        message_thread_id: msg.message_thread_id
+    });
+});
 
 // Command /start to initiate the month selection
 bot.onText(/\/start/, (msg) => {
@@ -51,27 +72,6 @@ bot.onText(/\/agenda/, (msg) => {
     });
 });
 
-bot.onText(/\/cancel/, (msg) => {
-    const userId = msg.from.id;
-
-    if (!allowedUsers(userId)) {
-        userHasNoPermition(bot, msg);
-        return;
-    }
-
-    if (agendaUsersState[userId]) {
-        delete agendaUsersState[userId];
-    }
-    if (piadState[userId]) {
-        delete piadState[userId];
-    }
-    if (pixState[userId]) {
-        delete pixState[userId];
-    }
-    bot.sendMessage(msg.chat.id, 'Operação cancelada', {
-        message_thread_id: msg.message_thread_id
-    });
-});
 
 bot.onText(/\/help/, (msg) => {
     // const chatId = msg.chat.id;
@@ -137,6 +137,9 @@ bot.onText(/\/delete/, (msg) => {
 
 // Handle user responses
 bot.on('message', async (msg) => {
+    if (msg.text === '/cancel') {
+        return;
+    }
     // Get the user ID of the message
     const userId = msg.from.id;
 
@@ -164,6 +167,10 @@ bot.on('message', async (msg) => {
 
 // Handle callback queries
 bot.on('callback_query', async (callbackQuery) => {
+    if (callbackQuery.data === '/cancel') {
+        return;
+    }
+    // Get the user ID of the message
     const userId = callbackQuery.from.id;
 
     if (agendaUsersState[userId]) {

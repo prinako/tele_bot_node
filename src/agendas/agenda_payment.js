@@ -257,7 +257,12 @@ class AgendaPayment {
     async insetPixToDB(data) {
         // Insert the document into the collection
         await insetPix(data, (result) => {
-            return;
+            // if (result.error) {
+            //     console.log('Error inserting document:', result.returnData);
+            //     return false;
+            // }
+            // console.log('Document inserted successfully:', result.returnData);
+            return true;
         });
     }
 

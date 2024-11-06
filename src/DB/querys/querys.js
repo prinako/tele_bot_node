@@ -168,7 +168,7 @@ async function insetPix(data, next) {
             // Disconnect from the database
             // Log any errors that occurred
             console.log(err);
-            returnData = {error: false, returnData: err};
+            returnData = {error: true, returnData: err};
             // Call the callback with false, indicating that there was an error inserting the document
         });
         await disconnectDB();
