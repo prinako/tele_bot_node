@@ -2,7 +2,7 @@ const moment = require('moment');
 const { insetAgendaPayment, insetPix} = require('../DB/querys/querys');
 const agendaFormatter = require('../utilities/agenda_formatter');
 const generateBankKeyboard = require('../utilities/generate_banks_keyboard');
-const getAllPixAsKeyboard = require('../utilities/get_all_pix_as_keyboard');
+const getUserPixBySenderBankAsKeyboard = require('../utilities/get_all_pix_as_keyboard');
 
 class AgendaPayment {
     /**
@@ -367,9 +367,9 @@ class AgendaPayment {
             const selectedBank = data.split('_')[1];
              this.selectedBank = selectedBank;
              
-             await getAllPixAsKeyboard(userId, 'pix', btn => {
+            await getUserPixBySenderBankAsKeyboard(userId,selectedBank, 'pix', (btn) => {
                  
-                 if (btn.length != 0) {
+                if (btn.length != 0) {
                     this.stage = 'pix';
                     this.bot.editMessageText(`Voce selecionou o banco ${selectedBank}. Por favor, selecione seu PIX:`, {
                         chat_id: this.chat_id,
@@ -381,7 +381,7 @@ class AgendaPayment {
                     });
                 } else {
                     this.stage = 'newPix';
-                    this.bot.editMessageText(`Voce selecionou o banco ${selectedBank}. Por favor, selecione seu PIX:`, {
+                    this.bot.editMessageText(`Voce selecionou o banco ${selectedBank}. Por favor, digite seu PIX:`, {
                         chat_id: this.chat_id,
                         message_id: this.message_id,
                         reply_markup: {

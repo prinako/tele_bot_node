@@ -176,17 +176,20 @@ async function insetPix(data, next) {
     }
 }
 
+
 /**
- * Retrieves all documents from the PixSchema collection that match the given senderId.
+ * Retrieves all PIX documents from the PixSchema collection that match the given senderId and bank.
  * @param {number} senderId - The senderId to search for.
+ * @param {string} bank - The bank type to search for.
  * @param {Function} next - A callback function that will be called with the result of the query.
- * @return {Promise} A promise that resolves with the result of the query, or rejects if there was an error.
+ * @return {Promise<void>}
  */
-async function getAllPix(senderId, next) {
+async function getUserPixBySenderBank(senderId, bank, next) {
+    // Connect to the database
     const connect = await connectDB();
     if (connect) {
-        // Find all documents that match the given senderId
-        await PixSchema.find({senderId: senderId}).exec()
+        // Find all documents that match the given senderId and bank
+        await PixSchema.find({senderId: senderId, bank: bank}).exec()
         .then(async (result) => {
             // Disconnect from the database
             await disconnectDB();
@@ -202,6 +205,7 @@ async function getAllPix(senderId, next) {
             return next(false);
         });
     }
+    // If connection failed, call the callback with false
     return next(false);
 }
 
@@ -246,6 +250,6 @@ module.exports = {
     deleteAgendaPayment,
     updateAgendaPayment,
     insetPix,
-    getAllPix,
+    getUserPixBySenderBank,
     updatePix,
 }
