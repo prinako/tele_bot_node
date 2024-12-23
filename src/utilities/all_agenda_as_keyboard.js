@@ -2,7 +2,7 @@
 // const generateBtn = require("../utilities/generate_btn.js");
 
 
-import getAllAgendaPaymentBySender from "../DB/querys/querys.js";
+import {getAllAgendaPaymentBySender} from "../DB/querys/querys.js";
 import generateBtn from "../utilities/generate_btn.js";
 
 /**
