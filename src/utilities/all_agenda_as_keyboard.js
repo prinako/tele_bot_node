@@ -1,5 +1,9 @@
-const { getAllAgendaPaymentBySender } = require("../DB/querys/querys");
-const generateBtn = require("../utilities/generate_btn.js");
+// const { getAllAgendaPaymentBySender } = require("../DB/querys/querys");
+// const generateBtn = require("../utilities/generate_btn.js");
+
+
+import {getAllAgendaPaymentBySender} from "../DB/querys/querys.js";
+import generateBtn from "../utilities/generate_btn.js";
 
 /**
  * Retrieves all agendas from the database and generates a keyboard for the user to select which one to proceed with.
@@ -18,4 +22,4 @@ async function allAgendaAsKeyboard(userID, name, next) {
     });
 }
 
-module.exports = allAgendaAsKeyboard
+export default allAgendaAsKeyboard

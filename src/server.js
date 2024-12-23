@@ -1,12 +1,20 @@
-const TelegramBot = require('node-telegram-bot-api');
-const AgendaPayment = require('./agendas/agenda_payment.js');
-const SomeonePaid = require('./agendas/someone_piad.js');
-const SchedulesEveryday = require('./schedules/schedules_everyday.js');
-const Paid = require('./agendas/paid.js');
-const Pix = require('./agendas/add_pix_to_db.js');
-const allowedUsers = require('./auth/auth.js');
-const userHasNoPermition = require('./utilities/has_no_permition.js');
+// const TelegramBot = require('node-telegram-bot-api');
+// const AgendaPayment = require('./agendas/agenda_payment.js');
+// const SomeonePaid = require('./agendas/someone_piad.js');
+// const SchedulesEveryday = require('./schedules/schedules_everyday.js');
+// const Paid = require('./agendas/paid.js');
+// const Pix = require('./agendas/add_pix_to_db.js');
+// const allowedUsers = require('./auth/auth.js');
+// const userHasNoPermition = require('./utilities/has_no_permition.js');
 
+import TelegramBot from 'node-telegram-bot-api/lib/telegram.js';
+import AgendaPayment from './agendas/agenda_payment.js';
+import SomeonePaid from './agendas/someone_piad.js';
+import SchedulesEveryday from './schedules/schedules_everyday.js';
+import Paid from './agendas/paid.js';
+import Pix from './agendas/add_pix_to_db.js';
+import allowedUsers from './auth/auth.js';
+import userHasNoPermition from './utilities/has_no_permition.js';
 
 
 // Create a new instance of the bot
@@ -125,7 +133,7 @@ bot.onText(/\/registerpix/, (msg) => {
 
     pixState[userId] = new Pix(bot);
     pixState[userId].addPix(msg);
-})
+});
 
 bot.onText(/\/delete/, (msg) => {
     const userId = msg.from.id;
@@ -133,7 +141,9 @@ bot.onText(/\/delete/, (msg) => {
         userHasNoPermition(bot, msg);
         return;
     }
-})
+});
+
+bot.onText(/\/ia/, (msg) => {});
 
 // Handle user responses
 bot.on('message', async (msg) => {
@@ -163,7 +173,7 @@ bot.on('message', async (msg) => {
             delete pixState[userId];
         }
     }
-})
+});
 
 // Handle callback queries
 bot.on('callback_query', async (callbackQuery) => {

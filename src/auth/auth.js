@@ -18,4 +18,4 @@ function authUser(userID) {
     }
 }
 
-module.exports = authUser;
+export default authUser;

@@ -1,7 +1,13 @@
-const cron = require('node-cron');
-const {getAllAgendaPayment} = require('../DB/querys/querys.js');
-const agendaFormatter = require('../utilities/agenda_formatter.js');
-const constantPayment = require('../utilities/constante_payment.js');
+// const cron = require('node-cron');
+// const {getAllAgendaPayment} = require('../DB/querys/querys.js');
+// const agendaFormatter = require('../utilities/agenda_formatter.js');
+// const constantPayment = require('../utilities/constante_payment.js');
+
+
+import cron from 'node-cron';
+import getAllAgendaPayment from '../DB/querys/querys.js';
+import agendaFormatter from '../utilities/agenda_formatter.js';
+import constantPayment from '../utilities/constante_payment.js';
 
 class SchedulesEveryday {
     /**
@@ -109,4 +115,4 @@ class SchedulesEveryday {
     }
 }
 
-module.exports = SchedulesEveryday;
+export default SchedulesEveryday;

@@ -33,4 +33,4 @@ function generateBtn(array, nameSpace, next) {
     return next(buttons);
 }
 
-module.exports = generateBtn
+export default generateBtn

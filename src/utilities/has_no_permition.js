@@ -10,4 +10,4 @@ function userHasNoPermition(bot, msg) {
     });
 }
 
-module.exports = userHasNoPermition;
+export default userHasNoPermition;

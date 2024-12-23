@@ -1,8 +1,14 @@
-const moment = require('moment');
-const { insetAgendaPayment, insetPix} = require('../DB/querys/querys');
-const agendaFormatter = require('../utilities/agenda_formatter');
-const generateBankKeyboard = require('../utilities/generate_banks_keyboard');
-const getUserPixBySenderBankAsKeyboard = require('../utilities/get_all_pix_as_keyboard');
+// const moment = require('moment');
+// const { insetAgendaPayment, insetPix} = require('../DB/querys/querys');
+// const agendaFormatter = require('../utilities/agenda_formatter');
+// const generateBankKeyboard = require('../utilities/generate_banks_keyboard');
+// const getUserPixBySenderBankAsKeyboard = require('../utilities/get_all_pix_as_keyboard');
+
+import moment from 'moment';
+import {insetAgendaPayment, insetPix} from '../DB/querys/querys.js';
+import agendaFormatter from '../utilities/agenda_formatter.js';
+import generateBankKeyboard from '../utilities/generate_banks_keyboard.js';
+import getUserPixBySenderBankAsKeyboard from '../utilities/get_all_pix_as_keyboard.js';
 
 class AgendaPayment {
     /**
@@ -302,18 +308,48 @@ class AgendaPayment {
 
             case 'amount':
                 this.selectedAmount = userText;
-                this.stage = 'description';
-                this.bot.sendMessage(chatId, 'Por favor escreva a descrição da fatura:',{
+                this.stage = 'dividers';
+                this.bot.sendMessage(chatId, 'Por favor, quantas pessoas vão pagar essa fatura? \n\nEg: Se foi para 3 pessoas, digite 3',{
                     message_thread_id: messageThreadId
                 });
                 return false;
         
-            case 'description':
-                this.selectedDescription = userText;
+            case 'dividers':
+                // this.selectedDescription = userText;
+                const dividers = this.dividers( this.selectedAmount, userText);
+                if (!dividers) {
+                    this.stage = 'amount';
+                    this.bot.sendMessage(chatId, 'Aconteceu um erro ao registrar a fatura, só aceitamos valores numéricos. \n\nPor favor, qual é o valor da fatura?', {
+                        message_thread_id: messageThreadId
+                    });
+                    return false;
+                }
                 this.stage = 'finalSummary';
                 this.sendFinalSummary(chatId, messageThreadId, userId);
                 return true;
         }
+    }
+
+    /**
+     * Divide the account by the number of dividers.
+     * @param {number|string} account - The account to be divided.
+     * @param {number|string} numberOfDividers - The number of dividers.
+     * @return {boolean} true if the divider was successful, false otherwise.
+     */
+    dividers(account, numberOfDividers) {
+        // Attempt to convert the account and number of dividers to numbers
+        const acc = Number(account);
+        const dividers = Number(numberOfDividers);
+
+        // Check if the conversion was successful
+        if (!acc || !dividers || dividers <= 0) {
+            return false;
+        }
+
+        // Calculate the divided amount and set the selected description
+        const dividedAmount = acc / dividers;
+        this.selectedDescription = `R$ ${dividedAmount.toFixed(2)} por cada pessoa \n\n R$ ${acc}/${dividers} = R$ ${dividedAmount.toFixed(2)}`;
+        return true;
     }
 
     /**
@@ -425,5 +461,4 @@ class AgendaPayment {
 }
 
 
-
-module.exports = AgendaPayment;
+export default AgendaPayment;

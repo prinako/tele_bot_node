@@ -36,4 +36,4 @@ function generateBankKeyboard(next) {
     }))));
 }
 
-module.exports = generateBankKeyboard;
+export default generateBankKeyboard;
