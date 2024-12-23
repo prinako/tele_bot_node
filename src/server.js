@@ -133,7 +133,7 @@ bot.onText(/\/registerpix/, (msg) => {
 
     pixState[userId] = new Pix(bot);
     pixState[userId].addPix(msg);
-})
+});
 
 bot.onText(/\/delete/, (msg) => {
     const userId = msg.from.id;
@@ -141,7 +141,9 @@ bot.onText(/\/delete/, (msg) => {
         userHasNoPermition(bot, msg);
         return;
     }
-})
+});
+
+bot.onText(/\/ia/, (msg) => {});
 
 // Handle user responses
 bot.on('message', async (msg) => {
@@ -171,7 +173,7 @@ bot.on('message', async (msg) => {
             delete pixState[userId];
         }
     }
-})
+});
 
 // Handle callback queries
 bot.on('callback_query', async (callbackQuery) => {
