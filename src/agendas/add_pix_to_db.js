@@ -1,5 +1,8 @@
-const {insetPix, getAllPix, updatePix} = require('../DB/querys/querys');
-const generateBankKeyboard = require('../utilities/generate_banks_keyboard');
+// const {insetPix, getAllPix, updatePix} = require('../DB/querys/querys');
+// const generateBankKeyboard = require('../utilities/generate_banks_keyboard');
+
+import {insetPix, updatePix} from '../DB/querys/querys.js';
+import generateBankKeyboard from '../utilities/generate_banks_keyboard.js';
 
 
 class AddPixToDB {
@@ -165,4 +168,4 @@ class AddPixToDB {
     }
 }
 
-module.exports = AddPixToDB;
+export default AddPixToDB;

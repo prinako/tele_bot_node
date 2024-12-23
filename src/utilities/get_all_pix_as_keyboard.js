@@ -1,7 +1,8 @@
-const { getUserPixBySenderBank } = require("../DB/querys/querys");
-const generateBtn = require("./generate_btn")
+// const { getUserPixBySenderBank } = require("../DB/querys/querys");
+// const generateBtn = require("./generate_btn")
 
-
+import {getUserPixBySenderBank} from "../DB/querys/querys.js";
+import generateBtn from "./generate_btn.js";
 
 /**
  * Retrieves all PIX from the database for a given sender ID and bank type,
@@ -23,4 +24,4 @@ async function getUserPixBySenderBankAsKeyboard(senderId, bank, name, next) {
     });
 }
 
-module.exports = getUserPixBySenderBankAsKeyboard
+export default getUserPixBySenderBankAsKeyboard;

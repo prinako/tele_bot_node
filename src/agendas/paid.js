@@ -1,6 +1,10 @@
-const { updateAgendaPayment } = require("../DB/querys/querys");
-const allAgendaAsKeyboard = require("../utilities/all_agenda_as_keyboard");
-const agendaFormatter = require("../utilities/agenda_formatter");
+// const { updateAgendaPayment } = require("../DB/querys/querys");
+// const allAgendaAsKeyboard = require("../utilities/all_agenda_as_keyboard");
+// const agendaFormatter = require("../utilities/agenda_formatter");
+
+import { updateAgendaPayment } from "../DB/querys/querys.js";
+import allAgendaAsKeyboard from "../utilities/all_agenda_as_keyboard.js";
+import agendaFormatter from "../utilities/agenda_formatter.js";
 
 class paid{
     constructor(bot){
@@ -74,4 +78,5 @@ class paid{
         }
     }
 }
-module.exports = paid;
+
+export default paid;

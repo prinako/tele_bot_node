@@ -41,4 +41,4 @@ function constantPayment(){
     return listConstantPayment
 }
 
-module.exports = constantPayment;
+export default constantPayment;

@@ -17,4 +17,4 @@ function agendaFormatter(agenda) {
 }
 
 
-module.exports = agendaFormatter;
+export default agendaFormatter;

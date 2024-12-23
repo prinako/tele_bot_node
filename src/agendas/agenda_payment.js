@@ -1,8 +1,14 @@
-const moment = require('moment');
-const { insetAgendaPayment, insetPix} = require('../DB/querys/querys');
-const agendaFormatter = require('../utilities/agenda_formatter');
-const generateBankKeyboard = require('../utilities/generate_banks_keyboard');
-const getUserPixBySenderBankAsKeyboard = require('../utilities/get_all_pix_as_keyboard');
+// const moment = require('moment');
+// const { insetAgendaPayment, insetPix} = require('../DB/querys/querys');
+// const agendaFormatter = require('../utilities/agenda_formatter');
+// const generateBankKeyboard = require('../utilities/generate_banks_keyboard');
+// const getUserPixBySenderBankAsKeyboard = require('../utilities/get_all_pix_as_keyboard');
+
+import moment from 'moment';
+import {insetAgendaPayment, insetPix} from '../DB/querys/querys.js';
+import agendaFormatter from '../utilities/agenda_formatter.js';
+import generateBankKeyboard from '../utilities/generate_banks_keyboard.js';
+import getUserPixBySenderBankAsKeyboard from '../utilities/get_all_pix_as_keyboard.js';
 
 class AgendaPayment {
     /**
@@ -425,5 +431,4 @@ class AgendaPayment {
 }
 
 
-
-module.exports = AgendaPayment;
+export default AgendaPayment;

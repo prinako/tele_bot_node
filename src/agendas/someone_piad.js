@@ -1,6 +1,10 @@
-const {updateAgendaPayment, getAgendaPaymentById } = require('../DB/querys/querys.js');
-const agendaFormatter = require('../utilities/agenda_formatter.js');
-const allAgendaAsKeyboard = require('../utilities/all_agenda_as_keyboard.js');
+// const {updateAgendaPayment, getAgendaPaymentById } = require('../DB/querys/querys.js');
+// const agendaFormatter = require('../utilities/agenda_formatter.js');
+// const allAgendaAsKeyboard = require('../utilities/all_agenda_as_keyboard.js');
+
+import {updateAgendaPayment, getAgendaPaymentById } from '../DB/querys/querys.js';
+import agendaFormatter from '../utilities/agenda_formatter.js';
+import allAgendaAsKeyboard from '../utilities/all_agenda_as_keyboard.js';
 
 class SomeonePaid {
       /**
@@ -219,4 +223,4 @@ class SomeonePaid {
 }
 
 
-module.exports = SomeonePaid;
+export default SomeonePaid;

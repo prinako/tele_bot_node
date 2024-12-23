@@ -1,6 +1,8 @@
-const { AgendaPaymentSchema, PixSchema } = require('../schema/schema.js');
-const { connectDB, disconnectDB } = require('../connectDB/mongoDB.js');
+// const { AgendaPaymentSchema, PixSchema } = require('../schema/schema.js');
+// const { connectDB, disconnectDB } = require('../connectDB/mongoDB.js');
 
+import { AgendaPaymentSchema, PixSchema } from '../schema/schema.js';
+import { connectDB, disconnectDB } from '../connectDB/mongoDB.js';
 
 /**
  * Inserts a new document into the AgendaPayment collection.
@@ -242,7 +244,21 @@ async function updatePix(id, data, next) {
 
 async function deleteAgendaPayment() {}
 
-module.exports = {
+// export default {
+//     insetAgendaPayment,
+//     getAllAgendaPayment,
+//     getAllAgendaPaymentBySender,
+//     getAgendaPaymentById,
+//     deleteAgendaPayment,
+//     updateAgendaPayment,
+//     insetPix,
+//     getUserPixBySenderBank,
+//     updatePix,
+// }
+
+export default{}
+
+export  {
     insetAgendaPayment,
     getAllAgendaPayment,
     getAllAgendaPaymentBySender,

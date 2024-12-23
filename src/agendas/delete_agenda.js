@@ -5,4 +5,4 @@ class DeleteAgenda {
     }
 }
 
-module.exports = DeleteAgenda;
+export default DeleteAgenda;

@@ -1,4 +1,5 @@
-const mongoose = require('mongoose');
+// const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 const Schema = mongoose.Schema;
 
 const agendaPaymentSchema = new Schema({
@@ -83,7 +84,7 @@ pixSchema.index({ pix: 1}, { unique: true });
 const AgendaPaymentSchema = mongoose.model('AgendaPayment', agendaPaymentSchema);
 const PixSchema = mongoose.model('Pix', pixSchema);
 
-module.exports = {
+export {
     AgendaPaymentSchema,
     PixSchema,
 }
