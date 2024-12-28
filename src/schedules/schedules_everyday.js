@@ -5,10 +5,13 @@
 
 
 import cron from 'node-cron';
-import getAllAgendaPayment from '../DB/querys/querys.js';
+import {getAllAgendaPayment} from '../DB/querys/querys.js';
 import agendaFormatter from '../utilities/agenda_formatter.js';
 import constantPayment from '../utilities/constante_payment.js';
 
+/**
+ * A class that checks if there are any agendas to notify the user.
+ */
 class SchedulesEveryday {
     /**
      * Constructor for the SchedulesEveryday class.
