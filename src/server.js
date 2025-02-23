@@ -141,7 +141,7 @@ bot.on('message', async (msg) => {
     if (msg.text === '/cancel') {
         return;
     }
-    console.log(msg);
+    // console.log(msg);
     
     // Get the user ID of the message
     const userId = msg.from.id;
