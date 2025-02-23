@@ -22,20 +22,33 @@ class paid{
     }
 
     async paid(msg){
-        await this.getAllAgendas(msg);
+        await this._getAllAgendas(msg);
     }
 
-    async getAllAgendas(msg){
-        await allAgendaAsKeyboard(msg.from.id,'paid', (buttons) => {
-            if(buttons){
-                this.bot.sendMessage(msg.chat.id, `Por favor, selecione o fatura:\n\nPor favor, selecione o fatura que voce marca:`, {
-                    message_thread_id: msg.message_thread_id,
-                    reply_markup: {
-                        inline_keyboard: buttons
-                    }
-                });
-            }
-        })
+    /**
+     * Retrieves all agendas from the database and generates a keyboard for the user to select who paid.
+     * @param {Message} msg - The Telegram message object.
+     * @return {Promise<void>}
+     */
+    async _getAllAgendas(msg) {
+        // Get all agendas from the database and generate a keyboard
+        const buttons = await new Promise((resolve) => {
+            // Use the allAgendaAsKeyboard function to generate the keyboard
+            // The function takes the user ID and the context ('paid') as parameters
+            // and resolves with the generated keyboard or undefined if no agendas are found
+            allAgendaAsKeyboard(msg.from.id, 'paid', resolve);
+        });
+
+        // Create a response message based on whether the keyboard was generated or not
+        const responseMessage = buttons
+            ? 'Por favor, selecione o fatura:\n\nPor favor, selecione o fatura que voce marca:'
+            : 'Voce nao tem nenhuma fatura encontrada';
+
+        // Send the message with the keyboard to the user
+        this.bot.sendMessage(msg.chat.id, responseMessage, {
+            message_thread_id: msg.message_thread_id,
+            reply_markup: buttons ? { inline_keyboard: buttons } : undefined
+        });
     }
     async addToDatabase(callbackQuery, data){
         const msg = callbackQuery.message;

@@ -1,20 +1,11 @@
-// const TelegramBot = require('node-telegram-bot-api');
-// const AgendaPayment = require('./agendas/agenda_payment.js');
-// const SomeonePaid = require('./agendas/someone_piad.js');
-// const SchedulesEveryday = require('./schedules/schedules_everyday.js');
-// const Paid = require('./agendas/paid.js');
-// const Pix = require('./agendas/add_pix_to_db.js');
-// const allowedUsers = require('./auth/auth.js');
-// const userHasNoPermition = require('./utilities/has_no_permition.js');
-
 import TelegramBot from 'node-telegram-bot-api/lib/telegram.js';
 import AgendaPayment from './agendas/agenda_payment.js';
-import SomeonePaid from './agendas/someone_piad.js';
+import SomeonePaid from './agendas/someone_paid.js';
 import SchedulesEveryday from './schedules/schedules_everyday.js';
 import Paid from './agendas/paid.js';
 import Pix from './agendas/add_pix_to_db.js';
 import allowedUsers from './auth/auth.js';
-import userHasNoPermition from './utilities/has_no_permition.js';
+import userHasNoPermission from './utilities/has_no_permissions.js';
 
 
 // Create a new instance of the bot
@@ -23,7 +14,7 @@ const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 new SchedulesEveryday(bot);
 
 const agendaUsersState = {};
-const piadState = {};
+const paidState = {};
 const pagouState = {};
 const pixState = {};
 
@@ -32,15 +23,15 @@ bot.onText(/\/cancel/, (msg) => {
     const userId = msg.from.id;
 
     if (!allowedUsers(userId)) {
-        userHasNoPermition(bot, msg);
+        userHasNoPermission(bot, msg);
         return;
     }
 
     if (agendaUsersState[userId]) {
         delete agendaUsersState[userId];
     }
-    if (piadState[userId]) {
-        delete piadState[userId];
+    if (paidState[userId]) {
+        delete paidState[userId];
     }
     if (pixState[userId]) {
         delete pixState[userId];
@@ -67,7 +58,7 @@ bot.onText(/\/agenda/, (msg) => {
         agendaUsersState[userId] = {};
     }
     if (!allowedUsers(userId)) {
-        userHasNoPermition(bot, msg);
+        userHasNoPermission(bot, msg);
         return;
     }
     agendaUsersState[userId] = new AgendaPayment(bot);
@@ -102,21 +93,21 @@ bot.onText(/\/help/, (msg) => {
 bot.onText(/\/whopaid/, (msg) => {
     const userId = msg.from.id;
     if (!allowedUsers(userId)) {
-        userHasNoPermition(bot, msg);
+        userHasNoPermission(bot, msg);
         return;
     }
 
-    if (piadState[userId]) {
-        piadState[userId] = {};
+    if (paidState[userId]) {
+        paidState[userId] = {};
     }
-    piadState[userId] = new SomeonePaid(bot);
-    piadState[userId].addWhoPaid(msg);
+    paidState[userId] = new SomeonePaid(bot);
+    paidState[userId].addWhoPaid(msg);
 });
 
 bot.onText(/\/pagou/, (msg) => {
     const userId = msg.from.id;
     if (!allowedUsers(userId)) {
-        userHasNoPermition(bot, msg);
+        userHasNoPermission(bot, msg);
         return;
     }
     pagouState[userId] = new Paid(bot);
@@ -127,7 +118,7 @@ bot.onText(/\/registerpix/, (msg) => {
     const userId = msg.from.id;
 
     if (!allowedUsers(userId)) {
-        userHasNoPermition(bot, msg);
+        userHasNoPermission(bot, msg);
         return;
     }
 
@@ -138,7 +129,7 @@ bot.onText(/\/registerpix/, (msg) => {
 bot.onText(/\/delete/, (msg) => {
     const userId = msg.from.id;
     if (!allowedUsers(userId)) {
-        userHasNoPermition(bot, msg);
+        userHasNoPermission(bot, msg);
         return;
     }
 });
@@ -150,6 +141,8 @@ bot.on('message', async (msg) => {
     if (msg.text === '/cancel') {
         return;
     }
+    console.log(msg);
+    
     // Get the user ID of the message
     const userId = msg.from.id;
 
@@ -186,8 +179,8 @@ bot.on('callback_query', async (callbackQuery) => {
     if (agendaUsersState[userId]) {
         agendaUsersState[userId].handleKeyboard(callbackQuery);
     }
-    if (piadState[userId]) {
-        piadState[userId].handlePaid(callbackQuery);
+    if (paidState[userId]) {
+        paidState[userId].handlePaid(callbackQuery);
     }
     if (pixState[userId]) {
         pixState[userId].handlePix(callbackQuery);

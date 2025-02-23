@@ -7,7 +7,7 @@
 import cron from 'node-cron';
 import {getAllAgendaPayment} from '../DB/querys/querys.js';
 import agendaFormatter from '../utilities/agenda_formatter.js';
-import constantPayment from '../utilities/constante_payment.js';
+import constantPayment from '../utilities/constant_payment.js';
 
 /**
  * A class that checks if there are any agendas to notify the user.

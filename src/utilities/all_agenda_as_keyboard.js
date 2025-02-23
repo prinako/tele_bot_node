@@ -15,10 +15,12 @@ import generateBtn from "../utilities/generate_btn.js";
 async function allAgendaAsKeyboard(userID, name, next) {
     // Get all agendas from the database
     await getAllAgendaPaymentBySender(userID, (result) => {
-        if (result) {
+        if (result.lent > 0) {
+            console.log(result)
             // Generate a keyboard with the agendas
             generateBtn(result, name, next);
         }
+        return next(false);
     });
 }
 
