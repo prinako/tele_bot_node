@@ -52,17 +52,16 @@ class SomeonePaid {
      */
     async getAllAgendasKeyboard(msg) {
         // Get all agendas from the database
-        await allAgendaAsKeyboard(msg.from.id, 'someonePaid', (buttons) => {
-            if (buttons) {
-                // Send a message with the keyboard to the user
-                this.bot.sendMessage(msg.chat.id, 'Vamos adicionar quem pagou a parte ele\n\nPor favor, selecione o fatura:', {
-                    message_thread_id: msg.message_thread_id,
-                    reply_markup: {
-                        inline_keyboard: buttons // Send the buttons
-                    }
-                });
-            }
-        });
+        const buttons = await allAgendaAsKeyboard(msg.from.id, 'someonePaid');
+        if (buttons) {
+            // Send a message with the keyboard to the user
+            this.bot.sendMessage(msg.chat.id, 'Vamos adicionar quem pagou a parte ele\n\nPor favor, selecione o fatura:', {
+                message_thread_id: msg.message_thread_id,
+                reply_markup: {
+                    inline_keyboard: buttons // Send the buttons
+                }
+            });
+        }
     }
 
     /**
@@ -138,6 +137,9 @@ class SomeonePaid {
                 message_id: updateAgenda.messageThreadId,
                 parse_mode: 'Markdown',
             });
+        }else {
+            // Send an error message to the user
+            this.bot.sendMessage(msg.chat.id, 'Ocorreu um erro ao atualizar a fatura. Por favor, tente novamente.');
         }
     }
 

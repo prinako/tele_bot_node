@@ -10,18 +10,17 @@ import generateBtn from "./generate_btn.js";
  * @param {number} senderId - The Telegram user ID.
  * @param {string} bank - The type of bank account.
  * @param {string} name - The namespace to be used for the callback_data.
- * @param {Function} next - The callback function to call with the generated buttons.
- * @return {Promise<void>}
+ * @return {Promise} A promise that resolves with the generated buttons, or rejects if there was an error.
  */
-async function getUserPixBySenderBankAsKeyboard(senderId, bank, name, next) {
+async function getUserPixBySenderBankAsKeyboard(senderId, bank, name) {
     // Get all pix from database
-    await getUserPixBySenderBank(senderId, bank, (result) => {
-        if (result) {
-            // Generate a keyboard with the pix
-            generateBtn(result, name, next);
-        }
-        // return next(false);
-    });
+    const result = await getUserPixBySenderBank(senderId, bank);
+    if (!result || result.length === 0) {
+        // Return false if the result is empty
+        return false;
+    }
+    // Generate a keyboard with the pix
+    return generateBtn(result, name);
 }
 
 export default getUserPixBySenderBankAsKeyboard;

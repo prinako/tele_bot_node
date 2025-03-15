@@ -186,42 +186,7 @@ class AgendaPayment {
 
         return calendar;
     }
-
    
-    /**
-     * Generates a keyboard for selecting banks.
-     * @return {Object[][]} a 2D array of objects where each object has a text and a callback_data property
-     */
-    // generateBankKeyboard(){
-    //     // List of banks to be displayed in the keyboard
-    //     const bankList = [
-    //         {text: 'Bradesco', callback_data: 'Bradesco'},
-    //         {text: 'Itau', callback_data: 'Itau'},
-    //         {text: 'Santander', callback_data: 'Santander'},
-    //         {text: 'Caixa', callback_data: 'Caixa'},
-    //         {text: 'Nubank', callback_data: 'Nubank'},
-    //         {text: 'Inter', callback_data: 'Inter'},
-    //         {text: 'Banco do Brasil', callback_data: 'Banco do Brasil'},
-    //         {text: 'Next', callback_data: 'Next'},
-    //         {text: 'C6 Bank', callback_data: 'C6 Bank'},
-    //         {text: 'Picpay', callback_data: 'Picpay'},
-    //         {text: 'Neon', callback_data: 'Neon'},
-    //     ];
-
-    //     // Group the list of banks in rows of 2
-    //     const groupedBanks = bankList.reduce((acc, cur, idx) => {
-    //         if (idx % 2 === 0) {
-    //             acc.push([cur]);
-    //         } else {
-    //             acc[acc.length - 1].push(cur);
-    //         }
-    //         return acc;
-    //     }, []);
-
-    //     // Map the grouped banks to the format required by the Telegram API
-    //     return groupedBanks.map(b => b.map(bk => ({ text: bk.text, callback_data: `bank_${bk.callback_data }`})));
-    // }
-
     // Function to send a final summary message like the image
     async sendFinalSummary(chatId, messageThreadId, userId) {
 
@@ -406,32 +371,30 @@ class AgendaPayment {
         // Handle bank selection
         if (data.startsWith('bank_')) {
             const selectedBank = data.split('_')[1];
-             this.selectedBank = selectedBank;
+            this.selectedBank = selectedBank;
              
-            await getUserPixBySenderBankAsKeyboard(userId,selectedBank, 'pix', (btn) => {
-                 
-                if (btn.length != 0) {
-                    this.stage = 'pix';
-                    this.bot.editMessageText(`Voce selecionou o banco ${selectedBank}. Por favor, selecione seu PIX:`, {
-                        chat_id: this.chat_id,
-                        message_id: this.message_id,
-                        reply_markup: {
-                            inline_keyboard: btn,
-                            remove_keyboard: true
-                        }
-                    });
-                } else {
-                    this.stage = 'newPix';
-                    this.bot.editMessageText(`Voce selecionou o banco ${selectedBank}. Por favor, digite seu PIX:`, {
-                        chat_id: this.chat_id,
-                        message_id: this.message_id,
-                        reply_markup: {
-                            inline_keyboard: [[]],
-                            remove_keyboard: true
-                        }
-                    })
-                }
-            });
+            const btn = await getUserPixBySenderBankAsKeyboard(userId,selectedBank, 'pix');
+            if (btn && btn.length != 0) {
+                this.stage = 'pix';
+                this.bot.editMessageText(`Voce selecionou o banco ${selectedBank}. Por favor, selecione seu PIX:`, {
+                    chat_id: this.chat_id,
+                    message_id: this.message_id,
+                    reply_markup: {
+                        inline_keyboard: btn,
+                        remove_keyboard: true
+                    }
+                });
+            } else {
+                this.stage = 'newPix';
+                this.bot.editMessageText(`Voce selecionou o banco ${selectedBank}. Por favor, digite seu PIX:`, {
+                    chat_id: this.chat_id,
+                    message_id: this.message_id,
+                    reply_markup: {
+                        inline_keyboard: [[]],
+                        remove_keyboard: true
+                    }
+                })
+            }
         }
 
         // Handle PIX key
