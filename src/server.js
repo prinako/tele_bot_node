@@ -6,6 +6,7 @@ import Paid from './agendas/paid.js';
 import Pix from './agendas/add_pix_to_db.js';
 import allowedUsers from './auth/auth.js';
 import userHasNoPermission from './utilities/has_no_permissions.js';
+import DeleteAgenda from './agendas/delete_agenda.js';
 
 
 // Create a new instance of the bot
@@ -17,6 +18,7 @@ const agendaUsersState = {};
 const paidState = {};
 const pagouState = {};
 const pixState = {};
+const deleteAgendaState = {};
 
 
 bot.onText(/\/cancel/, (msg) => {
@@ -132,14 +134,23 @@ bot.onText(/\/delete/, (msg) => {
         userHasNoPermission(bot, msg);
         return;
     }
+
+    deleteAgendaState[userId] = new DeleteAgenda(bot);
+    deleteAgendaState[userId].deleteAgenda(msg);
 });
 
 bot.onText(/\/ia/, (msg) => {});
 
 // Handle user responses
 bot.on('message', async (msg) => {
+    console.log(msg);
+
     if (msg.text === '/cancel') {
         return;
+    }
+
+    if (msg.text === 'Hi') {
+        bot.sendMessage(msg.chat.id, 'Hello! How can I help you?');
     }
     // console.log(msg);
     

@@ -105,28 +105,40 @@ class SomeonePaid {
         return options
     }
 
+    /**
+     * Updates the agenda in the database with the new information.
+     * @param {Object} callbackQuery - The callback query object sent by the user.
+     * @param {Object} data - The new information to be added to the agenda.
+     * @return {Promise<void>}
+     */
     async addToDatabase(callbackQuery, data) {
         const msg = callbackQuery.message;
-        await updateAgendaPayment(this.selectedAgendaId, data, (updateAgenda) => {
-            if(updateAgenda) {
-                const formattedAgenda = agendaFormatter(updateAgenda);
-                this.bot.editMessageText(formattedAgenda, {
-                    chat_id: msg.chat.id,
-                    message_id: msg.message_id,
-                    parse_mode: 'Markdown',
-                    reply_markup: {
-                        inline_keyboard: [[]],
-                        remove_keyboard: true
-                    },
-                });
-                this.bot.sendMessage(updateAgenda.chatId,formattedAgenda, {
-                    message_thread_id: updateAgenda.topicId,
-                    message_id: updateAgenda.messageThreadId,
-                    parse_mode: 'Markdown',
 
-                })
-            }
-        })
+        // Update the agenda in the database
+        const updateAgenda = await updateAgendaPayment(this.selectedAgendaId, data);
+
+        if (updateAgenda) {
+            // Format the agenda for display
+            const formattedAgenda = agendaFormatter(updateAgenda);
+
+            // Edit the message with the new information
+            this.bot.editMessageText(formattedAgenda, {
+                chat_id: msg.chat.id,
+                message_id: msg.message_id,
+                parse_mode: 'Markdown',
+                reply_markup: {
+                    inline_keyboard: [[]],
+                    remove_keyboard: true
+                },
+            });
+
+            // Send a copy of the message to the topic
+            this.bot.sendMessage(updateAgenda.chatId, formattedAgenda, {
+                message_thread_id: updateAgenda.topicId,
+                message_id: updateAgenda.messageThreadId,
+                parse_mode: 'Markdown',
+            });
+        }
     }
 
     /**
@@ -144,15 +156,15 @@ class SomeonePaid {
         // If the user selected an agenda, show the list of people who paid
         if (data.startsWith('someonePaid_')) {
             this.selectedAgendaId = data.split('_')[1];
-            await getAgendaPaymentById(this.selectedAgendaId, (result) => {
-                if (result) {
-                    this.sadat = result.sadat
-                    this.sam = result.sam
-                    this.prince = result.prince
 
-                    this.resend(msg)
-                }
-            })
+            const result = await getAgendaPaymentById(this.selectedAgendaId);
+            if (result) {
+                this.sadat = result.sadat
+                this.sam = result.sam
+                this.prince = result.prince
+
+                this.resend(msg)
+            }
         }
 
         // Switch statement to handle user's response

@@ -6,13 +6,15 @@
  * @return {Promise} A promise that resolves with the generated buttons
  */
 function generateBtn(array, nameSpace, next) {
+
     // Create an array to store the generated buttons
     const btnList = [];
     // Iterate over the array and generate a button for each item
     array.forEach(d => {
+        console.log(d);
         btnList.push({
             text: d.title? `${d.title}\n${d.date}`: d.bank, // The text to be displayed on the button
-            callback_data: d.title? d.id: d.pix // The callback data to be sent when the button is clicked
+            callback_data: d.title? d._id: d.pix // The callback data to be sent when the button is clicked
         });
     });
     // Group the buttons into rows of 2
