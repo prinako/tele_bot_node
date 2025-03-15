@@ -12,17 +12,16 @@ import generateBtn from "../utilities/generate_btn.js";
  * @param {Function} next - The callback function to call with the generated buttons.
  * @return {Promise<void>}
  */
-async function allAgendaAsKeyboard(userID, name, next) {
+async function allAgendaAsKeyboard(userID, name) {
     // Get all agendas from the database
     if (name === 'someonePaid') {
         const result = await getAllAgendaPaymentBySender(userID,dec => dec);
         console.log(result);
         if (result.length === 0 || !result) {
-            console.log(result)
-            return next(false);
+            return false;
         }
         // Generate a keyboard with the agendas
-        generateBtn(result, name, next);
+        return generateBtn(result, name);
     }
 }
 

@@ -194,32 +194,27 @@ async function insetPix(data, next) {
  * Retrieves all PIX documents from the PixSchema collection that match the given senderId and bank.
  * @param {number} senderId - The senderId to search for.
  * @param {string} bank - The bank type to search for.
- * @param {Function} next - A callback function that will be called with the result of the query.
  * @return {Promise<void>}
  */
-async function getUserPixBySenderBank(senderId, bank, next) {
+async function getUserPixBySenderBank(senderId, bank) {
     // Connect to the database
     const connect = await connectDB();
-    if (connect) {
-        // Find all documents that match the given senderId and bank
-        await PixSchema.find({senderId: senderId, bank: bank}).exec()
-        .then(async (result) => {
-            // Disconnect from the database
-            await disconnectDB();
-            // Call the callback with the result of the query
-            return next(result);
-        })
-        .catch(async err => {
-            // Log any errors that occurred
-            console.log(err);
-            // Disconnect from the database
-            await disconnectDB();
-            // Call the callback with false, indicating that there was an error
-            return next(false);
-        });
+    if (!connect) {
+        return false;
     }
-    // If connection failed, call the callback with false
-    return next(false);
+
+    try {
+    // Find all documents that match the given senderId and bank
+    const result = await PixSchema.find({senderId: senderId, bank: bank}).exec()
+    return result;
+    } catch (error) {
+        // Log any errors that occurred
+        console.error('Error occurred during query:', error);
+        return false;
+    }finally {
+        // Disconnect from the database
+        await disconnectDB();
+    }
 }
 
 /**

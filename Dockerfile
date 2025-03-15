@@ -2,7 +2,10 @@ FROM node as builder
 
 LABEL maintainer="mail@prinako.online"
 LABEL version="1.0"
-LABEL description="Dockerfile for tele_bot_node"
+LABEL org.opencontainers.image.source=https://github.com/prinako/tele_bot_node
+LABEL org.opencontainers.image.description="Dockerfile for tele_bot_node"
+LABEL org.opencontainers.image.licenses=MIT
+
 
 WORKDIR /app
 

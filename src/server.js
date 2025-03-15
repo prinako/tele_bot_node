@@ -143,15 +143,14 @@ bot.onText(/\/ia/, (msg) => {});
 
 // Handle user responses
 bot.on('message', async (msg) => {
-    console.log(msg);
 
     if (msg.text === '/cancel') {
         return;
     }
 
-    if (msg.text === 'Hi') {
-        bot.sendMessage(msg.chat.id, 'Hello! How can I help you?');
-    }
+    // if (msg.text === 'Hi') {
+    //     bot.sendMessage(msg.chat.id, 'Hello! How can I help you?');
+    // }
     // console.log(msg);
     
     // Get the user ID of the message
