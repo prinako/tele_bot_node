@@ -1,5 +1,9 @@
 FROM node as builder
 
+LABEL maintainer="mail@prinako.online"
+LABEL version="1.0"
+LABEL description="Dockerfile for tele_bot_node"
+
 WORKDIR /app
 
 COPY src ./src
