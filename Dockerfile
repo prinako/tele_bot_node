@@ -2,7 +2,9 @@ FROM node as builder
 
 WORKDIR /app
 
-COPY . .
+COPY src ./src
+COPY package.json .
+COPY package-lock.json .
 
 RUN npm install --production 
 
@@ -16,4 +18,4 @@ RUN mkdir -p /app/src/allowed_users
 
 # VOLUME ['./app/src/allowed_users']
 
-CMD ["node" ,"./src/server.js"]
+ENTRYPOINT ["node" ,"./src/server.js"]

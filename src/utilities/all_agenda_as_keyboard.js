@@ -14,14 +14,16 @@ import generateBtn from "../utilities/generate_btn.js";
  */
 async function allAgendaAsKeyboard(userID, name, next) {
     // Get all agendas from the database
-    await getAllAgendaPaymentBySender(userID, (result) => {
-        if (result.lent > 0) {
+    if (name === 'someonePaid') {
+        const result = await getAllAgendaPaymentBySender(userID,dec => dec);
+        console.log(result);
+        if (result.length === 0 || !result) {
             console.log(result)
-            // Generate a keyboard with the agendas
-            generateBtn(result, name, next);
+            return next(false);
         }
-        return next(false);
-    });
+        // Generate a keyboard with the agendas
+        generateBtn(result, name, next);
+    }
 }
 
 export default allAgendaAsKeyboard
