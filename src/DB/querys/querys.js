@@ -215,22 +215,6 @@ async function getUserPixBySenderBank(senderId, bank) {
         // Disconnect from the database
         await disconnectDB();
     }
-    // // await PixSchema.find({senderId: senderId, bank: bank}).exec()
-    // .then(async (result) => {
-    //     // Disconnect from the database
-    //     await disconnectDB();
-    //     // Call the callback with the result of the query
-    //     return next(result);
-    // })
-    // .catch(async err => {
-    //     // Log any errors that occurred
-    //     console.log(err);
-    //     // Disconnect from the database
-    //     await disconnectDB();
-    //     // Call the callback with false, indicating that there was an error
-    //     return next(false);
-    // });
-    // If connection failed, call the callback with false
 }
 
 /**
