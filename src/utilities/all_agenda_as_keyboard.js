@@ -14,7 +14,7 @@ import generateBtn from "../utilities/generate_btn.js";
  */
 async function allAgendaAsKeyboard(userID, name) {
     // Get all agendas from the database
-    if (name === 'someonePaid') {
+    if (name === 'someonePaid' || name === 'paid') {
         const result = await getAllAgendaPaymentBySender(userID,dec => dec);
         console.log(result);
         if (result.length === 0 || !result) {
