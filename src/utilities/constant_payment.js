@@ -19,7 +19,7 @@ function constantPayment() {
         bank: 'Next',
         isPaid: false,
         sadat: false,
-        sam: false,
+        frank: false,
         prince: false
     }];
 }

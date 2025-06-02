@@ -11,7 +11,7 @@ function agendaFormatter(agenda) {
             `Pix Chave (${agenda.bank}): \`${agenda.pix}\`\n\n` +
             `--------------------------------\n` +
             `Sadat ${agenda.sadat ?  '  ✅' :  '  ❌'} \n` +
-            `Sam ${agenda.sam ?  '  ✅' : '   ❌'} \n` + 
+            `Frank ${agenda.frank ?  '  ✅' : '   ❌'} \n` + 
             `Prince ${agenda.prince ? ' ✅' : '  ❌'} \n` +
             `--------------------------------\n\n`;   
 }
