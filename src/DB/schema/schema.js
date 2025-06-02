@@ -45,7 +45,7 @@ const agendaPaymentSchema = new Schema({
         type: Boolean,
         default: false
     },
-    sam: {
+    frank: {
         type: Boolean,
         default: false
     },
