@@ -9,18 +9,23 @@ import generateBtn from "../utilities/generate_btn.js";
  * Retrieves all agendas from the database and generates a keyboard for the user to select which one to proceed with.
  * @param {number} userID - The Telegram user ID.
  * @param {string} name - The namespace to be used for the callback_data.
- * @param {Function} next - The callback function to call with the generated buttons.
- * @return {Promise<void>}
+ * @return {Promise<Object[][]|boolean>} A promise that resolves with the generated buttons array or false if no agendas were found.
  */
 async function allAgendaAsKeyboard(userID, name) {
-    // Get all agendas from the database
+    // Check if the name parameter matches the expected namespaces
     if (name === 'someonePaid' || name === 'paid') {
-        const result = await getAllAgendaPaymentBySender(userID,dec => dec);
+        // Retrieve agendas from the database filtered by userID
+        const result = await getAllAgendaPaymentBySender(userID);
+        
+        // Log the result for debugging purposes
         console.log(result);
-        if (result.length === 0 || !result) {
+        
+        // Return false if no results were found or the result is falsy
+        if (!result || result.length === 0) {
             return false;
         }
-        // Generate a keyboard with the agendas
+
+        // Generate and return a keyboard with the agendas
         return generateBtn(result, name);
     }
 }

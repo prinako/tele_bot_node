@@ -19,7 +19,7 @@ class SomeonePaid {
         // Initialize state properties
         this._selectedAgendaId = '';
         this._prince = false;
-        this._sam = false;
+        this._frank = false;
         this._sadat = false;
     }
 
@@ -29,8 +29,8 @@ class SomeonePaid {
     get prince() { return this._prince; }
     set prince(v) { this._prince = v; }
 
-    get sam() { return this._sam; }
-    set sam(v) { this._sam = v; }
+    get frank() { return this._frank; }
+    set frank(v) { this._frank = v; }
 
     get sadat() { return this._sadat; }
     set sadat(v) { this._sadat = v; }
@@ -84,8 +84,8 @@ class SomeonePaid {
             ],
             [ /* Sam has paid */
                 {
-                    text: this.sam ? 'Sam ✅' : 'Sam ❌',
-                    callback_data: 'sam'
+                    text: this.frank ? 'Frank ✅' : 'Frank ❌',
+                    callback_data: 'frank'
                 },
             ],
             [ /* Prince has paid */
@@ -162,7 +162,7 @@ class SomeonePaid {
             const result = await getAgendaPaymentById(this.selectedAgendaId);
             if (result) {
                 this.sadat = result.sadat
-                this.sam = result.sam
+                this.frank = result.frank
                 this.prince = result.prince
 
                 this.resend(msg)
@@ -175,12 +175,12 @@ class SomeonePaid {
                 // If the user selected "all", set all members as true
                 {
                     this.prince = true
-                    this.sam = true
+                    this.frank = true
                     this.sadat = true
 
                     const data = {
                         sadat: this.sadat,
-                        sam: this.sam,
+                        frank: this.frank,
                         prince: this.prince
                     }
                     await this.addToDatabase(callbackQuery, data);
@@ -193,10 +193,10 @@ class SomeonePaid {
                     this.resend(msg)
                 }
                 break
-            case 'sam':
-                // If the user selected "Sam", set Sam as true
+            case 'frank':
+                // If the user selected "Frank", set Sam as true
                 {
-                    this.sam = !this.sam
+                    this.frank = !this.frank
                     this.resend(msg)
                 }
                 break
@@ -211,7 +211,7 @@ class SomeonePaid {
                 {
                     const data = {
                         sadat: this.sadat,
-                        sam: this.sam,
+                        frank: this.frank,
                         prince: this.prince
                     }
                     await this.addToDatabase(callbackQuery, data);

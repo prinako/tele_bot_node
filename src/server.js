@@ -138,7 +138,13 @@ bot.onText(/\/delete/, (msg) => {
     deleteAgendaState[userId].deleteAgenda(msg);
 });
 
-bot.onText(/\/ia/, (msg) => {});
+bot.onText(/\/ia/, (msg) => {
+    bot.sendMessage(msg.chat.id, 'Oi, sou a inteligência artificial do bot de faturas.\n\nNo momento, sou apenas um bot de faturas.\n\nPara saber mais sobre mim, digite /help', {
+        message_thread_id: msg.message_thread_id,
+        chat_id: msg.chat.id,
+        message_id: msg.message_id,
+    });
+});
 
 // Handle user responses
 bot.on('message', async (msg) => {
@@ -148,9 +154,13 @@ bot.on('message', async (msg) => {
         return;
     }
 
-    // if (msg.text === 'Hi') {
-    //     bot.sendMessage(msg.chat.id, 'Hello! How can I help you?');
-    // }
+    if (msg.text === 'Hi' || msg.text === 'Hello' || msg.text === 'Oi' || msg.text === 'Ola' || msg.text === 'Olá') {
+        bot.sendMessage(msg.chat.id, msg.text + msg.from.first_name + ', sou a inteligência artificial do bot de faturas.\n\n Vou te ajudar a registrar o pagamento de faturas.\n\nPara saber mais sobre mim, digite /agenda', {
+            message_thread_id: msg.message_thread_id,
+            chat_id: msg.chat.id,
+            message_id: msg.message_id,
+        });
+    }
     // console.log(msg);
     
     // Get the user ID of the message
