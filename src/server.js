@@ -55,7 +55,6 @@ bot.onText(/\/start/, (msg) => {
 // Command /agenda to initiate the month selection
 bot.onText(/\/agenda/, (msg) => {
     const userId = msg.from.id;
-    
     if (agendaUsersState[userId]) {
         agendaUsersState[userId] = {};
     }
@@ -143,6 +142,7 @@ bot.onText(/\/ia/, (msg) => {});
 
 // Handle user responses
 bot.on('message', async (msg) => {
+    console.debug(msg);
 
     if (msg.text === '/cancel') {
         return;
