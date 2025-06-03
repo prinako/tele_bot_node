@@ -44,7 +44,7 @@ class SchedulesEveryday {
      * 
      * @return {void}
      */
-    runEveryday() {
+    runEveryday()  {
         /**
          * Cron expression to run the _checkIfNeedToNotify method at 9:00 AM every day.
          * The expression is in the format:
@@ -59,7 +59,7 @@ class SchedulesEveryday {
          */
         cron.schedule('0 9 * * *', this._checkIfNeedToNotify.bind(this));
     }
-    
+
     /**
      * Checks if there are any agendas that need to be notified.
      * If today is 3, 2 or 1 day before the agenda date, a message is sent to the user with the agenda details
@@ -71,63 +71,42 @@ class SchedulesEveryday {
         const today = dateNow.getDate();
         const month = dateNow.getMonth() + 1;
         const year = dateNow.getFullYear();
-        // Get all agendas from the database
+        const daysLeftMessages = {
+            3: 'Faltam 3 dias para a data de vencimento',
+            2: 'Faltam 2 dias para a data de vencimento',
+            1: 'Faltam 1 dia para a data de vencimento',
+            0: 'Hoje é a data de vencimento'
+        };
+
+        /**
+         * Get all agendas from the database.
+         * For each agenda, calculate the days left until the due date.
+         * If the days left are 3, 2, or 1, send a message to the user with the agenda details and the notification.
+         * @param {Array} allAgendas - The array of all agendas from the database.
+         * @return {void}
+         */
         await getAllAgendaPayment(async (allAgendas) => {
-            if (allAgendas) {
-                // Loop through each agenda
-                allAgendas.forEach(async (agenda) => {
-                    const agendaDay = Number(agenda.date.split('/')[0]);
-                    const agendaMonth = Number(agenda.date.split('/')[1]);
-                    const agendaYear = Number(agenda.date.split('/')[2]);
-                    
-                    if (agendaMonth !== month || agendaYear !== year) {
-                        // If the agenda month or year is different from the current month or year, skip the agenda
-                        return;
-                    }
-                    // Check if today is 3 days before the agenda date
-                    if ((agendaDay - 3) === today) {
-                        // Format the agenda details
-                        const formattedAgenda = agendaFormatter(agenda);
+            if (!allAgendas) return;
 
-                        // Send a message to the user with the agenda details
-                        // and the notification that there are 3 days left
-                        await this.bot.sendMessage(agenda.chatId, formattedAgenda +`Faltam 3 dias para a data de vencimento`,{
+            allAgendas.forEach(async (agenda) => {
+                const [agendaDay, agendaMonth, agendaYear] = agenda.date.split('/').map(Number);
+
+                /**
+                 * Check if the agenda month and year match the current month and year.
+                 * If they do, calculate the days left until the due date.
+                 * If the days left are 3, 2, or 1, send a message to the user with the agenda details and the notification.
+                 */
+                if (agendaMonth === month && agendaYear === year) {
+                    const daysLeft = agendaDay - today;
+                    if (daysLeft in daysLeftMessages) {
+                        const formattedAgenda = agendaFormatter(agenda);
+                        await this.bot.sendMessage(agenda.chatId, `${formattedAgenda}${daysLeftMessages[daysLeft]}`, {
                             message_thread_id: agenda.topicId,
                             parse_mode: 'Markdown'
                         });
                     }
-                    // Check if today is 2 days before the agenda date
-                    else if ((agendaDay - 2) === today) {
-                        // Format the agenda details
-                        const formattedAgenda = agendaFormatter(agenda);
-
-                        // Send a message to the user with the agenda details
-                        // and the notification that there are 2 days left
-                        await this.bot.sendMessage(agenda.chatId, formattedAgenda +`Faltam 2 dias para a data de vencimento`,{
-                            message_thread_id: agenda.topicId,
-                            parse_mode: 'Markdown'
-                        });
-                    }
-                    // Check if today is 1 day before the agenda date
-                    else if ((agendaDay - 1) === today) {
-                        // Format the agenda details
-                        const formattedAgenda = agendaFormatter(agenda);
-
-                        // Send a message to the user with the agenda details
-                        // and the notification that there is 1 day left
-                        await this.bot.sendMessage(agenda.chatId, formattedAgenda +`Faltam 1 dia para a data de vencimento`,{
-                            message_thread_id: agenda.topicId,
-                            parse_mode: 'Markdown'
-                        });
-                    }else if(agendaDay === today){
-                        const formattedAgenda = agendaFormatter(agenda);
-                        await this.bot.sendMessage(agenda.chatId, formattedAgenda + `Hoje é a data de vencimento`, {
-                            message_thread_id: agenda.topicId,
-                            parse_mode: 'Markdown'
-                        })
-                    }
-                })
-            }
+                }
+            });
         });
     }
 
