@@ -17,6 +17,9 @@ function generateBankKeyboard(next) {
         {text: 'C6 Bank', callback_data: 'C6 Bank'},
         {text: 'Picpay', callback_data: 'Picpay'},
         {text: 'Neon', callback_data: 'Neon'},
+        {text: 'Mercado Pago', callback_data: 'Mercado Pago'},
+        {text: 'Pagseguro', callback_data: 'Pagseguro'},
+        {text: 'Banco Pan', callback_data: 'Banco Pan'},
     ];
 
     // Group the list of banks in rows of 2

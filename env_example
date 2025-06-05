@@ -5,3 +5,4 @@ BILLS_THREAD_ID=
 PAID_THREAD_ID=
 CHAT_ID=
 ADMIN_USERS=
+LOG= # true or false, boolean
