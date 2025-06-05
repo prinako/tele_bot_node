@@ -7,7 +7,8 @@ function agendaFormatter(agenda) {
     return `⚠️⚠️ *ATTENTION ${agenda.title.toUpperCase()} BILL* ⚠️⚠️\n\n`  +
             `R$ ${agenda.amount} \n\n` +
             `*Vencimento:* ${agenda.date}\n\n` +
-            `Descricão da fatura: ${agenda.description}\n\n` +
+            `Descrição da fatura: ${agenda.description}\n\n` +
+            `⚠️ Por favor, na descrição do pagamento adicione on nome do fatura sera pagado ⚠️\n\n` +
             `Pix Chave (${agenda.bank}): \`${agenda.pix}\`\n\n` +
             `--------------------------------\n` +
             `Sadat ${agenda.sadat ?  '  ✅' :  '  ❌'} \n` +
