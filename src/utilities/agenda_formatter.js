@@ -11,8 +11,8 @@ function agendaFormatter(agenda) {
             `⚠️ Por favor, na descrição do pagamento adicione on nome do fatura sera pagado ⚠️\n\n` +
             `Pix Chave (${agenda.bank}): \`${agenda.pix}\`\n\n` +
             `--------------------------------\n` +
-            `Sadat ${agenda.sadat ?  '  ✅' :  '  ❌'} \n` +
-            `Frank ${agenda.frank ?  '  ✅' : '   ❌'} \n` + 
+            `Sadat ${agenda.sadat ?   ' ✅' : '  ❌'} \n` +
+            `Frank ${agenda.frank ?   ' ✅' : '  ❌'} \n` + 
             `Prince ${agenda.prince ? ' ✅' : '  ❌'} \n` +
             `--------------------------------\n\n`;   
 }
