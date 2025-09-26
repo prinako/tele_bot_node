@@ -1,6 +1,6 @@
 {
   "name": "tele_bot_node",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "",
   "type": "module",
   "main": "--env-file=.env server.js",
