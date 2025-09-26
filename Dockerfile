@@ -1,11 +1,11 @@
-FROM node as builder
+FROM node:22-alpine3.22
 
 LABEL maintainer="mail@prinako.online"
-LABEL version="1.0"
+LABEL version="1.0.1"
 LABEL org.opencontainers.image.source=https://github.com/prinako/tele_bot_node
 LABEL org.opencontainers.image.description="Dockerfile for tele_bot_node"
 LABEL org.opencontainers.image.licenses=MIT
-
+LABEL org.opencontainers.image.value=latest
 
 WORKDIR /app
 
@@ -15,7 +15,7 @@ COPY package-lock.json .
 
 RUN npm install --production 
 
-FROM node:22-alpine3.19
+FROM node:22-alpine3.22
 
 WORKDIR /app
 
