@@ -1,4 +1,4 @@
-FROM node:22-alpine3.22
+FROM node:24-alpine AS builder
 
 LABEL maintainer="mail@prinako.online"
 LABEL version="1.0.1"
@@ -15,7 +15,7 @@ COPY package-lock.json .
 
 RUN npm install --production 
 
-FROM node:22-alpine3.22
+FROM node:24-alpine3.22
 
 WORKDIR /app
 
