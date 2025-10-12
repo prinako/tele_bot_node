@@ -1,4 +1,4 @@
-import TelegramBot from 'node-telegram-bot-api/lib/telegram.js';
+import TelegramBot from 'node-telegram-bot-api';
 import AgendaPayment from './agendas/agenda_payment.js';
 import SomeonePaid from './agendas/someone_paid.js';
 import SchedulesEveryday from './schedules/schedules_everyday.js';
