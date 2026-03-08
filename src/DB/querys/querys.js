@@ -145,7 +145,7 @@ async function updateAgendaPayment(id, data) {
 
     try {
         // Attempt to find and update the document with the given id
-        const result = await AgendaPaymentSchema.findByIdAndUpdate({_id:id}, data, { new: true }).exec();
+        const result = await AgendaPaymentSchema.findByIdAndUpdate({_id:id}, data, {  returnDocument: 'after'}).exec();
         // Return the updated document
         return result;
     } catch (error) {
@@ -228,7 +228,7 @@ async function updatePix(id, data, next) {
     const connect = await connectDB();
     if (connect) {
         // Find the document with the given id
-        await PixSchema.findByIdAndUpdate(id, data, { new: true })
+        await PixSchema.findByIdAndUpdate(id, data, {  returnDocument: 'after'})
             .exec()
             .then(async (result) => {
                 // Disconnect from the database
