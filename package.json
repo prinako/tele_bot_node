@@ -1,6 +1,6 @@
 {
-  "name": "tele_bot_node",
-  "version": "2.0.0",
+  "name": "telegram-bot-bills-manager",
+  "version": "2.0.1",
   "description": "",
   "type": "module",
   "main": "src/server.js",
@@ -29,7 +29,7 @@
   "license": "ISC",
   "dependencies": {
     "moment": "^2.30.1",
-    "mongoose": "^8.19.1",
+    "mongoose": "^9.2.4",
     "node-cron": "^4.2.1",
     "node-telegram-bot-api": "^0.67.0"
   }
