@@ -1,7 +1,7 @@
 {
   "name": "telegram-bot-bills-manager",
   "version": "2.0.1",
-  "description": "",
+  "description": "Telegram bot para gerenciamento de faturas",
   "type": "module",
   "main": "src/server.js",
   "scripts": {
