@@ -148,17 +148,22 @@ bot.onText(/\/ia/, (msg) => {
 
 // Handle user responses
 bot.on('message', async (msg) => {
+    const text = msg.text;
 
     if (process.env.LOG) console.debug(msg);
 
-    if (msg.text === '/cancel') {
+    if (!text) {
+        return;
+    }
+
+    if (text === '/cancel') {
         return;
     }
 
     try {
-        const greetings = msg.text.toLowerCase();
+        const greetings = text.toLowerCase();
         if (greetings === 'oi' || greetings === 'ola' || greetings === 'olá' || greetings === 'hello' || greetings === 'hi' || greetings === 'hey') {
-            bot.sendMessage(msg.chat.id, msg.text + ' '+ msg.from.first_name + ', sou a inteligência artificial do bot de faturas.\n\n Vou te ajudar a registrar o pagamento de faturas.\n\nPara saber mais sobre mim, digite /agenda', {
+            bot.sendMessage(msg.chat.id, text + ' '+ msg.from.first_name + ', sou a inteligência artificial do bot de faturas.\n\n Vou te ajudar a registrar o pagamento de faturas.\n\nPara saber mais sobre mim, digite /agenda', {
                 message_thread_id: msg.message_thread_id,
                 chat_id: msg.chat.id,
                 message_id: msg.message_id,
