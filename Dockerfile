@@ -1,4 +1,4 @@
-FROM node:24-bookworm-slim AS builder
+FROM node:25-bookworm-slim AS builder
 
 
 LABEL maintainer="mail@prinako.online"
@@ -24,7 +24,7 @@ COPY package-lock.json .
 ENV NODE_ENV=production
 RUN npm ci --omit=dev
 
-FROM node:24-bookworm-slim
+FROM node:25-bookworm-slim
 
 WORKDIR /app
 
