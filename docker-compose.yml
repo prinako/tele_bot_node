@@ -1,0 +1,39 @@
+services:
+  tele-bot:
+    build: .
+    container_name: tele-bot-node
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://telebot:${POSTGRES_PASSWORD}@postgres:5432/telebot
+      NODE_ENV: production
+    networks:
+      - telebot
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: tele-bot-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: telebot
+      POSTGRES_USER: telebot
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - /Kojo/Docker/tele_bot_node/postgres:/var/lib/postgresql/data
+      - ./src/DB/postgres/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U telebot -d telebot"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - telebot
+
+networks:
+  telebot:
+    name: telebot
