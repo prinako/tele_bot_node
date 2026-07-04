@@ -126,14 +126,15 @@ class AddPixToDB {
             const data = {
                 pix: this.pix,
                 senderId: this.senderId,
-                bank: this.bank
+                bank: this.bank,
+                user: msg.from
             };
             this.insetPixToDB(data, userId, messageThreadId);
         }
     }
 
     /**
-     * Inserts a new document into the PixSchema collection.
+     * Inserts a new PIX key into the database.
      * @param {Object} data - The data [Object]  to be inserted into the collection.
      * @param {number} userId - The user ID to be used for the message.
      * @param {number} messageThreadId - The message thread ID to be used for the message.
@@ -144,8 +145,9 @@ class AddPixToDB {
         await insetPix(data, (result) => {
             console.log(result)
             if (result.error) {
+                const errorCode = result.returnData?.code;
 
-                if (result.error.code === 11000) {
+                if (errorCode === '23505' || errorCode === 11000) {
                     // If there was an error inserting the document, send an error message
                     this.bot.sendMessage(userId, `Seu Pix chave ${this.pix} já existente no banco de dados \nPor favor, cadastre um novo pix.`, {
                         message_thread_id: messageThreadId
