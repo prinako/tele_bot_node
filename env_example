@@ -1,8 +1,12 @@
 BOT_TOKEN=
-MONGODB=
+POSTGRES_PASSWORD=
+DATABASE_URL=postgres://telebot:${POSTGRES_PASSWORD}@postgres:5432/telebot
+
 ALLOWED_USERS=
+ADMIN_USERS=
+
 BILLS_THREAD_ID=
 PAID_THREAD_ID=
 CHAT_ID=
-ADMIN_USERS=
-LOG= # true or false, boolean
+
+LOG=false
