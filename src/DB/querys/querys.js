@@ -278,8 +278,8 @@ async function getAllowedUsers(db) {
          FROM users
          WHERE is_allowed = TRUE
          ORDER BY
-            COALESCE(NULLIF(display_name, ''), username, telegram_id::TEXT),
-            telegram_id`,
+            display_name ASC NULLS LAST,
+            telegram_id ASC`,
     );
 
     return result.rows;
