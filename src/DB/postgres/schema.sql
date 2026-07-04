@@ -21,7 +21,8 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS pix_keys (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id)
+    ON DELETE CASCADE,
 
   pix TEXT NOT NULL,
   bank TEXT NOT NULL,
@@ -36,7 +37,8 @@ CREATE TABLE IF NOT EXISTS pix_keys (
 CREATE TABLE IF NOT EXISTS agenda_payments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-  created_by_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_by_user_id UUID NOT NULL REFERENCES users(id)
+    ON DELETE CASCADE,
 
   chat_id BIGINT NOT NULL,
   message_thread_id BIGINT,
@@ -47,7 +49,8 @@ CREATE TABLE IF NOT EXISTS agenda_payments (
   total_amount NUMERIC(12, 2) NOT NULL,
   description TEXT NOT NULL,
 
-  pix_key_id UUID REFERENCES pix_keys(id) ON DELETE SET NULL,
+  pix_key_id UUID REFERENCES pix_keys(id)
+    ON DELETE SET NULL,
 
   pix TEXT NOT NULL,
   bank TEXT NOT NULL,
@@ -62,8 +65,10 @@ CREATE TABLE IF NOT EXISTS agenda_payments (
 CREATE TABLE IF NOT EXISTS agenda_payment_members (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-  agenda_payment_id UUID NOT NULL REFERENCES agenda_payments(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  agenda_payment_id UUID NOT NULL REFERENCES agenda_payments(id)
+    ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id)
+    ON DELETE CASCADE,
 
   is_responsible BOOLEAN NOT NULL DEFAULT TRUE,
   is_paid BOOLEAN NOT NULL DEFAULT FALSE,
