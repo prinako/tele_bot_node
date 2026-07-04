@@ -188,12 +188,13 @@ class AgendaPayment {
     }
    
     // Function to send a final summary message like the image
-    async sendFinalSummary(chatId, messageThreadId, userId) {
+    async sendFinalSummary(chatId, messageThreadId, userId, user = {}) {
 
         const dueDate = `${this.selectedDay}/${this.selectedMonth}/${moment().year()}`;
         const dataToDB = {
             chatId: process.env.CHAT_ID,
             senderId: userId,
+            user,
             messageThreadId: messageThreadId,
             topicId: this.selectedTopicId,
             date: dueDate,
@@ -290,7 +291,7 @@ class AgendaPayment {
                     return false;
                 }
                 this.stage = 'finalSummary';
-                this.sendFinalSummary(chatId, messageThreadId, userId);
+                this.sendFinalSummary(chatId, messageThreadId, userId, msg.from);
                 return true;
         }
     }
