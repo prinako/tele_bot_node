@@ -10,6 +10,20 @@ import agendaFormatter from '../utilities/agenda_formatter.js';
 import generateBankKeyboard from '../utilities/generate_banks_keyboard.js';
 import getUserPixBySenderBankAsKeyboard from '../utilities/get_all_pix_as_keyboard.js';
 
+function parseCurrency(value) {
+    if (typeof value === 'number') {
+        return value;
+    }
+
+    const text = String(value ?? '').trim();
+    const normalized = text.includes(',')
+        ? text.replace(/\./g, '').replace(',', '.')
+        : text;
+
+    const amount = Number(normalized.replace(/[^\d.-]/g, ''));
+    return Number.isFinite(amount) ? amount : null;
+}
+
 class AgendaPayment {
     /**
      * Constructor for the AgendaPayment class.
@@ -259,7 +273,8 @@ class AgendaPayment {
                 const data = {
                     pix: this.selectedPix,
                     senderId: userId,
-                    bank: this.selectedBank
+                    bank: this.selectedBank,
+                    user: msg.from
                 }
                 this.insetPixToDB(data);
                 return false;
@@ -304,7 +319,7 @@ class AgendaPayment {
      */
     dividers(account, numberOfDividers) {
         // Attempt to convert the account and number of dividers to numbers
-        const acc = Number(account);
+        const acc = parseCurrency(account);
         const dividers = Number(numberOfDividers);
 
         // Check if the conversion was successful
