@@ -62,18 +62,40 @@ function adminTelegramIds() {
         .filter(Boolean);
 }
 
-function uniqueNumbers(values) {
-    return [...new Set(values.map(Number).filter(Boolean))];
-}
+function uniqueByTelegramId(users) {
+    const seen = new Set();
+    const uniqueUsers = [];
 
-function responsibleTelegramIds(data) {
-    const explicit = data.responsibleUserIds || data.responsibleTelegramIds || data.members;
-    if (Array.isArray(explicit) && explicit.length > 0) {
-        return uniqueNumbers(explicit.map((member) => member.telegramId || member.senderId || member.id || member));
+    for (const user of users) {
+        const telegramId = Number(user.telegram_id || user.telegramId || user.senderId || user.id || user);
+        if (!telegramId || seen.has(telegramId)) {
+            continue;
+        }
+
+        seen.add(telegramId);
+        uniqueUsers.push({ ...user, telegram_id: telegramId });
     }
 
-    const fromEnv = allowedTelegramIds();
-    return uniqueNumbers(fromEnv.length > 0 ? [...fromEnv, data.senderId] : [data.senderId]);
+    return uniqueUsers;
+}
+
+function explicitResponsibleUsers(data) {
+    const explicit = data.responsibleUserIds || data.responsibleTelegramIds || data.members;
+    if (Array.isArray(explicit) && explicit.length > 0) {
+        return uniqueByTelegramId(explicit.map((member) => (
+            typeof member === 'object'
+                ? {
+                    telegram_id: member.telegramId || member.telegram_id || member.senderId || member.id,
+                    username: member.username,
+                    first_name: member.firstName || member.first_name,
+                    last_name: member.lastName || member.last_name,
+                    display_name: member.displayName || member.display_name,
+                }
+                : { telegram_id: member }
+        )));
+    }
+
+    return null;
 }
 
 function parseMoney(value) {
@@ -250,6 +272,45 @@ async function findUserByTelegramId(db, telegramId) {
     return result.rows[0] || null;
 }
 
+async function getAllowedUsers(db) {
+    const result = await db.query(
+        `SELECT *
+         FROM users
+         WHERE is_allowed = TRUE
+         ORDER BY
+            COALESCE(NULLIF(display_name, ''), username, telegram_id::TEXT),
+            telegram_id`,
+    );
+
+    return result.rows;
+}
+
+async function resolveResponsibleUsers(db, data, creator) {
+    const explicitUsers = explicitResponsibleUsers(data);
+    if (explicitUsers) {
+        const users = [];
+        for (const explicitUser of explicitUsers) {
+            users.push(await upsertUser(db, {
+                telegramId: explicitUser.telegram_id,
+                username: explicitUser.username,
+                firstName: explicitUser.first_name,
+                lastName: explicitUser.last_name,
+                displayName: explicitUser.display_name,
+            }));
+        }
+
+        const uniqueUsers = uniqueByTelegramId(users);
+        return uniqueUsers.length > 0 ? uniqueUsers : [creator];
+    }
+
+    const allowedUsers = await getAllowedUsers(db);
+    if (allowedUsers.length > 0) {
+        return allowedUsers;
+    }
+
+    return [creator];
+}
+
 async function getAgendaRow(db, id) {
     const result = await db.query(
         `SELECT
@@ -401,11 +462,10 @@ async function insetAgendaPayment(data, next) {
         );
 
         const agenda = agendaResult.rows[0];
-        const members = responsibleTelegramIds(data);
-        const amountShare = members.length > 0 ? parseMoney(data.amount) / members.length : null;
+        const responsibleUsers = await resolveResponsibleUsers(db, data, creator);
+        const amountShare = responsibleUsers.length > 0 ? parseMoney(data.amount) / responsibleUsers.length : null;
 
-        for (const telegramId of members) {
-            const user = await upsertUser(db, { telegramId });
+        for (const user of responsibleUsers) {
             await db.query(
                 `INSERT INTO agenda_payment_members (
                     agenda_payment_id,
@@ -575,7 +635,8 @@ async function updateAgendaPayment(id, data, senderId = null) {
         }
 
         if (Array.isArray(data.members) || Array.isArray(data.responsibleUserIds) || Array.isArray(data.responsibleTelegramIds)) {
-            const members = responsibleTelegramIds(data);
+            const creator = await findUserByTelegramId(db, data.senderId || data.telegramId || senderId);
+            const members = await resolveResponsibleUsers(db, data, creator);
             const agenda = await getAgendaRow(db, id);
             const amountShare = members.length > 0 ? parseMoney(agenda.total_amount) / members.length : null;
 
@@ -588,8 +649,7 @@ async function updateAgendaPayment(id, data, senderId = null) {
                 [id],
             );
 
-            for (const telegramId of members) {
-                const user = await upsertUser(db, { telegramId });
+            for (const user of members) {
                 await db.query(
                     `INSERT INTO agenda_payment_members (
                         agenda_payment_id,
