@@ -4,6 +4,14 @@
  * @returns {string} The formatted string.
  */
 function agendaFormatter(agenda) {
+    const members = Array.isArray(agenda.members) ? agenda.members : [];
+    const memberLines = members.length > 0
+        ? members
+            .filter((member) => member.isResponsible !== false)
+            .map((member) => `${member.displayName || member.telegramId} ${member.isPaid ? ' ✅' : '  ❌'}`)
+            .join(' \n')
+        : `Pago ${agenda.isPaid ? ' ✅' : '  ❌'}`;
+
     return `⚠️⚠️ *ATTENTION ${agenda.title.toUpperCase()} BILL* ⚠️⚠️\n\n`  +
             `R$ ${agenda.amount} \n\n` +
             `*Vencimento:* ${agenda.date}\n\n` +
@@ -11,9 +19,7 @@ function agendaFormatter(agenda) {
             `⚠️ Favor informar, na descrição do pagamento, o nome da fatura correspondente. Obrigado! ⚠️\n\n` +
             `Pix Chave (${agenda.bank}): \`${agenda.pix}\`\n\n` +
             `--------------------------------\n` +
-            `Sadat ${agenda.sadat ?   ' ✅' : '  ❌'} \n` +
-            `Frank ${agenda.frank ?   ' ✅' : '  ❌'} \n` + 
-            `Prince ${agenda.prince ? ' ✅' : '  ❌'} \n` +
+            `${memberLines}\n` +
             `--------------------------------\n\n`;   
 }
 
