@@ -3,11 +3,12 @@
   "version": "2.0.1",
   "description": "Telegram bot para gerenciamento de faturas",
   "type": "module",
-  "main": "src/server.js",
+  "main": "docker-compose.yml",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node --env-file=.env src/server.js",
-    "dev": "node --watch --env-file=.env src/server.js"
+    "start": "docker compose up -d",
+    "logs": "docker compose logs -f backend tele_bot",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:bot": "cd tele_bot && npm run dev"
   },
   "keywords": [
     "telegram",

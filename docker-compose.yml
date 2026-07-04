@@ -2,6 +2,7 @@ services:
   backend:
     build:
       context: ./backend
+      dockerfile: Dockerfile
     container_name: tele-bot-backend
     restart: unless-stopped
     depends_on:
@@ -22,6 +23,7 @@ services:
   tele_bot:
     build:
       context: ./tele_bot
+      dockerfile: Dockerfile
     container_name: tele-bot
     restart: unless-stopped
     depends_on:
@@ -50,7 +52,9 @@ services:
       - /Kojo/Docker/tele_bot_node/postgres:/var/lib/postgresql/data
       - ./backend/src/db/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U telebot -d telebot"]
+      test:
+        - CMD-SHELL
+        - pg_isready -U telebot -d telebot
       interval: 30s
       timeout: 10s
       retries: 5

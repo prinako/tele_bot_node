@@ -1,4 +1,14 @@
 import { getClient, query } from '../db/postgres.js';
+import {
+    findUserByTelegramId,
+    getAllowedUsers,
+    upsertUser,
+} from './users.repository.js';
+import {
+    mapMember,
+    setMemberPaid,
+    updateFullPaymentState,
+} from './paymentMembers.repository.js';
 
 const agendaColumnMap = {
     chatId: 'chat_id',
@@ -12,54 +22,8 @@ const agendaColumnMap = {
     bank: 'bank',
 };
 
-const pixColumnMap = {
-    pix: 'pix',
-    bank: 'bank',
-};
-
 function toNumberOrNull(value) {
     return value === null || value === undefined ? null : Number(value);
-}
-
-function telegramDisplayName(user = {}) {
-    return user.displayName
-        || user.display_name
-        || [user.firstName || user.first_name, user.lastName || user.last_name].filter(Boolean).join(' ')
-        || user.username
-        || String(user.telegramId || user.telegram_id || user.senderId || '');
-}
-
-function userPayloadFromData(data = {}) {
-    const source = data.user || data.sender || data.from || {};
-    const telegramId = data.telegramId || data.senderId || source.id || source.telegram_id;
-
-    return {
-        telegramId,
-        username: source.username ?? data.username ?? null,
-        firstName: source.first_name ?? source.firstName ?? data.firstName ?? null,
-        lastName: source.last_name ?? source.lastName ?? data.lastName ?? null,
-        displayName: telegramDisplayName({
-            displayName: data.displayName,
-            firstName: source.first_name ?? source.firstName ?? data.firstName,
-            lastName: source.last_name ?? source.lastName ?? data.lastName,
-            username: source.username ?? data.username,
-            telegramId,
-        }),
-    };
-}
-
-function allowedTelegramIds() {
-    return (process.env.ALLOWED_USERS || '')
-        .split(',')
-        .map((id) => Number(id.trim()))
-        .filter(Boolean);
-}
-
-function adminTelegramIds() {
-    return (process.env.ADMIN_USERS || '')
-        .split(',')
-        .map((id) => Number(id.trim()))
-        .filter(Boolean);
 }
 
 function uniqueByTelegramId(users) {
@@ -123,26 +87,6 @@ function parseDueDate(value) {
     return text;
 }
 
-function mapMember(member) {
-    return {
-        _id: member.id,
-        id: member.id,
-        userId: member.user_id,
-        telegramId: toNumberOrNull(member.telegram_id),
-        senderId: toNumberOrNull(member.telegram_id),
-        username: member.username,
-        firstName: member.first_name,
-        lastName: member.last_name,
-        displayName: member.display_name || telegramDisplayName(member),
-        isResponsible: member.is_responsible,
-        isPaid: member.is_paid,
-        paidAt: member.paid_at,
-        amountShare: member.amount_share === null || member.amount_share === undefined ? null : String(member.amount_share),
-        createdAt: member.created_at,
-        updatedAt: member.updated_at,
-    };
-}
-
 function mapAgenda(row) {
     if (!row) {
         return row;
@@ -174,24 +118,6 @@ function mapAgenda(row) {
     };
 }
 
-function mapPix(row) {
-    if (!row) {
-        return row;
-    }
-
-    return {
-        _id: row.id,
-        id: row.id,
-        userId: row.user_id,
-        pix: row.pix,
-        senderId: toNumberOrNull(row.telegram_id),
-        telegramId: toNumberOrNull(row.telegram_id),
-        bank: row.bank,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-    };
-}
-
 function buildUpdate(data, columnMap) {
     const entries = Object.entries(data)
         .filter(([field]) => Object.prototype.hasOwnProperty.call(columnMap, field));
@@ -217,90 +143,6 @@ function buildUpdate(data, columnMap) {
         setSql: `${sets.join(', ')}, updated_at = NOW()`,
         values,
     };
-}
-
-async function upsertUser(db, data = {}) {
-    const user = userPayloadFromData(data);
-    if (!user.telegramId) {
-        throw new Error('telegram_id is required to upsert a user');
-    }
-
-    const result = await db.query(
-        `INSERT INTO users (
-            telegram_id,
-            username,
-            first_name,
-            last_name,
-            display_name,
-            is_admin,
-            is_allowed,
-            last_seen_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
-        ON CONFLICT (telegram_id)
-        DO UPDATE SET
-            username = COALESCE(EXCLUDED.username, users.username),
-            first_name = COALESCE(EXCLUDED.first_name, users.first_name),
-            last_name = COALESCE(EXCLUDED.last_name, users.last_name),
-            display_name = COALESCE(EXCLUDED.display_name, users.display_name),
-            is_admin = EXCLUDED.is_admin,
-            is_allowed = EXCLUDED.is_allowed,
-            last_seen_at = NOW(),
-            updated_at = NOW()
-        RETURNING *`,
-        [
-            user.telegramId,
-            user.username,
-            user.firstName,
-            user.lastName,
-            user.displayName,
-            adminTelegramIds().includes(Number(user.telegramId)),
-            allowedTelegramIds().length === 0 || allowedTelegramIds().includes(Number(user.telegramId)),
-        ],
-    );
-
-    return result.rows[0];
-}
-
-async function upsertTelegramUser(data = {}) {
-    const db = await getClient();
-
-    try {
-        return await upsertUser(db, data);
-    } finally {
-        db.release();
-    }
-}
-
-async function findUserByTelegramId(db, telegramId) {
-    const result = await db.query(
-        `SELECT *
-         FROM users
-         WHERE telegram_id = $1`,
-        [telegramId],
-    );
-
-    return result.rows[0] || null;
-}
-
-async function getUserByTelegramId(telegramId) {
-    return findUserByTelegramId({ query }, telegramId);
-}
-
-async function getAllowedUsers(db) {
-    const result = await db.query(
-        `SELECT *
-         FROM users
-         WHERE is_allowed = TRUE
-         ORDER BY
-            display_name ASC NULLS LAST,
-            telegram_id ASC`,
-    );
-
-    return result.rows;
-}
-
-async function getAllowedTelegramUsers() {
-    return getAllowedUsers({ query });
 }
 
 async function resolveResponsibleUsers(db, data, creator) {
@@ -366,60 +208,6 @@ async function getAgendaRow(db, id) {
     );
 
     return result.rows[0] || null;
-}
-
-async function updateFullPaymentState(db, agendaPaymentId) {
-    const result = await db.query(
-        `UPDATE agenda_payments ap
-         SET
-            is_fully_paid = payment_state.is_fully_paid,
-            fully_paid_at = CASE
-                WHEN payment_state.is_fully_paid AND ap.fully_paid_at IS NULL THEN NOW()
-                WHEN NOT payment_state.is_fully_paid THEN NULL
-                ELSE ap.fully_paid_at
-            END,
-            updated_at = NOW()
-         FROM (
-            SELECT
-                agenda_payment_id,
-                BOOL_AND(is_paid) FILTER (WHERE is_responsible) AS is_fully_paid
-            FROM agenda_payment_members
-            WHERE agenda_payment_id = $1
-            GROUP BY agenda_payment_id
-         ) payment_state
-         WHERE ap.id = payment_state.agenda_payment_id
-         RETURNING ap.*`,
-        [agendaPaymentId],
-    );
-
-    return result.rows[0] || null;
-}
-
-async function setMemberPaid(db, agendaPaymentId, telegramId, isPaid) {
-    const user = await findUserByTelegramId(db, telegramId);
-    if (!user) {
-        return false;
-    }
-
-    const result = await db.query(
-        `UPDATE agenda_payment_members
-         SET
-            is_paid = $3,
-            paid_at = CASE WHEN $3 THEN NOW() ELSE NULL END,
-            updated_at = NOW()
-         WHERE agenda_payment_id = $1
-           AND user_id = $2
-           AND is_responsible = TRUE
-         RETURNING *`,
-        [agendaPaymentId, user.id, isPaid],
-    );
-
-    if (result.rowCount === 0) {
-        return false;
-    }
-
-    await updateFullPaymentState(db, agendaPaymentId);
-    return true;
 }
 
 /**
@@ -710,137 +498,13 @@ async function updateAgendaPayment(id, data, senderId = null) {
     }
 }
 
-/**
- * Inserts a new PIX key.
- * @param {Object} data - The data to insert.
- * @param {Function} next - Callback called with the old response shape.
- */
-async function insetPix(data, next) {
-    const db = await getClient();
-
-    try {
-        await db.query('BEGIN');
-        const user = await upsertUser(db, data);
-        const result = await db.query(
-            `INSERT INTO pix_keys (
-                user_id,
-                pix,
-                bank
-            ) VALUES ($1, $2, $3)
-            RETURNING *`,
-            [
-                user.id,
-                data.pix,
-                data.bank,
-            ],
-        );
-        await db.query('COMMIT');
-
-        return next({ error: false, returnData: mapPix({ ...result.rows[0], telegram_id: user.telegram_id }) });
-    } catch (error) {
-        await db.query('ROLLBACK');
-        console.log(error);
-        return next({ error: true, returnData: error });
-    } finally {
-        db.release();
-    }
-}
-
-/**
- * Retrieves PIX keys by sender and bank.
- * @param {number} senderId - The Telegram user id to search for.
- * @param {string} bank - The bank type to search for.
- * @return {Promise<Array|boolean>} Matching PIX keys or false.
- */
-async function getUserPixBySenderBank(senderId, bank) {
-    try {
-        const result = await query(
-            `SELECT
-                pk.*,
-                u.telegram_id
-             FROM pix_keys pk
-             JOIN users u ON u.id = pk.user_id
-             WHERE u.telegram_id = $1
-               AND pk.bank = $2
-             ORDER BY pk.created_at ASC`,
-            [senderId, bank],
-        );
-
-        return result.rows.map(mapPix);
-    } catch (error) {
-        console.error('Error occurred during query:', error);
-        return false;
-    }
-}
-
-/**
- * Updates a PIX key.
- * @param {string} id - The id of the PIX key to update.
- * @param {Object} data - Allowed fields to update.
- * @param {Function} next - Callback called with the updated PIX key or false.
- */
-async function updatePix(id, data, next) {
-    const db = await getClient();
-
-    try {
-        await db.query('BEGIN');
-        const update = buildUpdate(data, pixColumnMap);
-
-        if (data.senderId || data.telegramId || data.user) {
-            const user = await upsertUser(db, data);
-            await db.query(
-                `UPDATE pix_keys
-                 SET
-                    user_id = $2,
-                    updated_at = NOW()
-                 WHERE id = $1`,
-                [id, user.id],
-            );
-        }
-
-        if (update) {
-            await db.query(
-                `UPDATE pix_keys
-                 SET ${update.setSql}
-                 WHERE id = $${update.values.length + 1}`,
-                [...update.values, id],
-            );
-        }
-
-        const result = await db.query(
-            `SELECT
-                pk.*,
-                u.telegram_id
-             FROM pix_keys pk
-             JOIN users u ON u.id = pk.user_id
-             WHERE pk.id = $1`,
-            [id],
-        );
-        await db.query('COMMIT');
-
-        return next(mapPix(result.rows[0]) || false);
-    } catch (err) {
-        await db.query('ROLLBACK');
-        console.log(err);
-        return next(false);
-    } finally {
-        db.release();
-    }
-}
-
 export default {};
 
 export {
-    upsertTelegramUser,
-    getUserByTelegramId,
-    getAllowedTelegramUsers,
     insetAgendaPayment,
     getAllAgendaPayment,
     getAllAgendaPaymentBySender,
     getAgendaPaymentById,
     deleteAgendaPayment,
     updateAgendaPayment,
-    insetPix,
-    getUserPixBySenderBank,
-    updatePix,
 };

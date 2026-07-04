@@ -2,7 +2,7 @@ import {
     getAllowedTelegramUsers,
     getUserByTelegramId,
     upsertTelegramUser,
-} from '../repositories/agenda.repository.js';
+} from '../repositories/users.repository.js';
 
 async function upsertUser(data) {
     return upsertTelegramUser(data);

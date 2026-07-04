@@ -2,7 +2,7 @@ import {
     getUserPixBySenderBank,
     insetPix,
     updatePix,
-} from '../repositories/agenda.repository.js';
+} from '../repositories/pix.repository.js';
 
 function registerPix(data) {
     return new Promise((resolve) => {

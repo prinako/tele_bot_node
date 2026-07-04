@@ -1,8 +1,13 @@
 import { getAgendaPaymentById, updateAgendaPayment } from '../repositories/agenda.repository.js';
+import { getMembersByAgendaPaymentId } from '../repositories/paymentMembers.repository.js';
 
 async function getMembers(agendaId) {
     const agenda = await getAgendaPaymentById(agendaId);
-    return agenda ? agenda.members : false;
+    if (!agenda) {
+        return false;
+    }
+
+    return getMembersByAgendaPaymentId(agendaId);
 }
 
 async function markPaid(agendaId, telegramId) {
