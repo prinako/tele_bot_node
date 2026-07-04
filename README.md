@@ -1,222 +1,134 @@
 # tele_bot_node
 
-Telegram bot for tracking shared bills and split payments, with PostgreSQL persistence and Docker-based deployment.
+Telegram bill-management bot split into two apps:
 
-Built for group chats (including forum topics) where members need to register recurring bills, assign responsibility, record partial payments, and receive due-date reminders.
-
----
-
-## Features
-
-- **Bill registration** — Create agenda payments with due date, amount, description, and PIX details via an interactive inline-keyboard flow (`/agenda`).
-- **Split tracking** — Dynamic per-user membership; no hard-coded user columns in the database.
-- **Payment updates** — Mark individual shares as paid (`/pagou`) and query payment status (`/whopaid`).
-- **PIX key management** — Register and reuse PIX keys per user and bank (`/registerpix`).
-- **Due-date reminders** — Daily cron job at 09:00 sends notifications 3, 2, and 1 day(s) before, and on the due date.
-- **Access control** — Restrict commands to an allowlist of Telegram user IDs.
-- **Forum topic support** — Posts to configured chat threads for bills and paid confirmations.
-
----
-
-## Tech Stack
-
-| Layer        | Technology                          |
-| ------------ | ----------------------------------- |
-| Runtime      | Node.js 25 (ES modules)             |
-| Bot API      | [node-telegram-bot-api](https://github.com/yagop/node-telegram-bot-api) |
-| Database     | PostgreSQL 17 via `pg`              |
-| Scheduling   | node-cron                           |
-| Deployment   | Docker Compose, GitHub Actions → GHCR |
-
----
-
-## Architecture
-
-```mermaid
-flowchart LR
-  TG[Telegram] --> Bot[tele-bot-node]
-  Bot --> PG[(PostgreSQL)]
-  Cron[node-cron 09:00] --> Bot
+```text
+Telegram <-> tele_bot <-> HTTP API <-> backend <-> PostgreSQL
 ```
 
-**Database schema** (`src/DB/postgres/schema.sql`):
+`tele_bot` owns Telegram polling, command flows, in-memory state, keyboards, and messages. `backend` owns PostgreSQL access, business rules, users, PIX keys, agenda payments, and dynamic payment members.
 
-| Table                    | Purpose                                      |
-| ------------------------ | -------------------------------------------- |
-| `users`                  | Telegram users, admin/allowed flags          |
-| `pix_keys`               | PIX keys per user and bank                   |
-| `agenda_payments`        | Bills with due date, amount, and PIX info    |
-| `agenda_payment_members` | Per-user responsibility and payment state    |
+## Structure
 
-The schema is applied automatically on first PostgreSQL container startup via Docker's `docker-entrypoint-initdb.d` mechanism.
+```text
+backend/
+  src/server.js
+  src/app.js
+  src/db/
+  src/routes/
+  src/controllers/
+  src/repositories/
+  src/services/
+  src/utils/
 
----
+tele_bot/
+  src/server.js
+  src/bot.js
+  src/api/backendClient.js
+  src/agendas/
+  src/auth/
+  src/schedules/
+  src/utilities/
+  src/commands/
+  src/handlers/
+  src/keyboards/
+  src/messages/
+  src/state/
+```
 
-## Prerequisites
+## Backend API
 
-- [Docker](https://docs.docker.com/get-docker/) and Docker Compose
-- A Telegram bot token from [@BotFather](https://t.me/BotFather)
-- Telegram user IDs for `ALLOWED_USERS` (and optionally `ADMIN_USERS`)
+- `GET /health`
+- `POST /api/users/upsert`
+- `GET /api/users/allowed`
+- `GET /api/users/:telegramId`
+- `POST /api/pix`
+- `GET /api/pix?senderId=<telegramId>&bank=<bank>`
+- `PATCH /api/pix/:id`
+- `POST /api/agenda`
+- `GET /api/agenda`
+- `GET /api/agenda/user/:telegramId`
+- `GET /api/agenda/:id`
+- `PATCH /api/agenda/:id`
+- `DELETE /api/agenda/:id`
+- `GET /api/agenda/:id/members`
+- `PATCH /api/agenda/:id/members/:telegramId/paid`
+- `PATCH /api/agenda/:id/members/:telegramId/unpaid`
 
-For local development without Docker, you need Node.js 20+ and a reachable PostgreSQL instance.
+## Database
 
----
+The PostgreSQL schema lives at `backend/src/db/schema.sql` and keeps the dynamic design:
 
-## Quick Start
+- `users`
+- `pix_keys`
+- `agenda_payments`
+- `agenda_payment_members`
 
-### 1. Configure environment
+New agenda payments use explicit responsible users when provided. Otherwise, backend selects all users with `is_allowed = TRUE`. If none exist yet, it falls back to the creator only.
+
+## Environment
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` and fill in the required values (see [Configuration](#configuration) below).
-
-### 2. Start with Docker Compose
-
-```bash
-docker compose up -d --build
-docker compose logs -f tele-bot
-```
-
-The bot waits for PostgreSQL to pass its health check before starting.
-
-### 3. Verify
-
-Send `/help` to the bot from an allowed Telegram account. You should see the command list.
-
----
-
-## Configuration
-
-| Variable            | Required | Description |
-| ------------------- | -------- | ----------- |
-| `BOT_TOKEN`         | Yes      | Telegram bot token from BotFather |
-| `POSTGRES_PASSWORD` | Yes      | PostgreSQL password (used by both services) |
-| `DATABASE_URL`      | Yes      | Connection string. Default in Compose: `postgres://telebot:${POSTGRES_PASSWORD}@postgres:5432/telebot` |
-| `ALLOWED_USERS`     | Yes      | Comma-separated Telegram user IDs allowed to use bot commands |
-| `ADMIN_USERS`       | No       | Comma-separated admin user IDs |
-| `CHAT_ID`           | Yes      | Target group chat ID |
-| `BILLS_THREAD_ID`   | No       | Forum topic ID for pending bills |
-| `PAID_THREAD_ID`    | No       | Forum topic ID for paid confirmations |
-| `LOG`               | No       | Set to `true` to enable debug logging |
-
-Example `.env`:
-
 ```env
-BOT_TOKEN=123456:ABC-DEF...
-POSTGRES_PASSWORD=your-secure-password
-DATABASE_URL=postgres://telebot:${POSTGRES_PASSWORD}@postgres:5432/telebot
+BOT_TOKEN=
+POSTGRES_PASSWORD=
 
-ALLOWED_USERS=111111111,222222222
-ADMIN_USERS=111111111
+BACKEND_PORT=3000
+BACKEND_URL=http://backend:3000
 
-CHAT_ID=-1001234567890
-BILLS_THREAD_ID=42
-PAID_THREAD_ID=43
+ALLOWED_USERS=
+ADMIN_USERS=
+
+BILLS_THREAD_ID=
+PAID_THREAD_ID=
+CHAT_ID=
 
 LOG=false
 ```
 
-> **Note:** The PostgreSQL data volume in `docker-compose.yml` is mounted at `/Kojo/Docker/tele_bot_node/postgres`. Adjust this path to match your host before deploying.
+## Docker
 
----
+```bash
+docker compose build
+docker compose up -d postgres backend
+curl http://localhost:3000/health
+docker compose up -d tele_bot
+docker compose logs -f backend tele_bot
+```
+
+The PostgreSQL data volume is mounted at `/Kojo/Docker/tele_bot_node/postgres`.
 
 ## Bot Commands
 
-| Command        | Access   | Description |
-| -------------- | -------- | ----------- |
-| `/agenda`      | Allowed  | Register a new pending bill payment |
-| `/pagou`       | Allowed  | Record that a member paid their share |
-| `/whopaid`     | Allowed  | Show who has paid for a bill |
-| `/registerpix` | Allowed  | Register a PIX key for a bank |
-| `/delete`      | Allowed  | Remove a registered bill |
-| `/cancel`      | Allowed  | Cancel the current interactive flow |
-| `/help`        | All      | List available commands |
-| `/start`       | All      | Entry point; directs users to `/agenda` |
-
----
+- `/agenda`
+- `/pagou`
+- `/whopaid`
+- `/registerpix`
+- `/delete`
+- `/cancel`
+- `/help`
 
 ## Local Development
 
-Point `DATABASE_URL` at a local or remote PostgreSQL database, then:
+Backend:
 
 ```bash
+cd backend
 npm install
 npm run dev
 ```
 
-`npm run dev` runs the server with `--watch` and loads variables from `.env`.
-
-Production start (no file watcher):
+Bot:
 
 ```bash
-npm start
+cd tele_bot
+npm install
+BACKEND_URL=http://localhost:3000 npm run dev
 ```
 
----
+## Notes
 
-## Database Operations
-
-### Backup
-
-```bash
-docker exec tele-bot-postgres pg_dump -U telebot -d telebot > telebot-postgres-backup.sql
-```
-
-### Reset (destructive)
-
-Stops containers, removes the PostgreSQL data directory, and recreates the database from `schema.sql`:
-
-```bash
-docker compose down
-sudo rm -rf /Kojo/Docker/tele_bot_node/postgres
-docker compose up -d --build
-```
-
----
-
-## Project Structure
-
-```
-src/
-├── server.js              # Bot entry point, command routing
-├── auth/                  # Allowlist-based access control
-├── agendas/               # Bill, payment, PIX, and delete flows
-├── schedules/             # Daily due-date notification cron
-├── DB/
-│   ├── connectDB/         # PostgreSQL connection pool
-│   ├── postgres/schema.sql
-│   └── querys/            # Query layer
-└── utilities/             # Keyboards, formatters, constants
-```
-
----
-
-## CI/CD
-
-Pushes to `main`, `dev`, and `test`, plus version tags, trigger a GitHub Actions workflow that builds and pushes a signed image to [GHCR](https://github.com/prinako/tele_bot_node/pkgs/container/tele_bot_node):
-
-```
-ghcr.io/prinako/tele_bot_node
-```
-
-Pull requests run a build-only check without publishing.
-
----
-
-## Manual Smoke Test
-
-1. Start the app.
-2. Insert one agenda payment via `/agenda`.
-3. List unpaid agenda payments.
-4. Mark one payment paid with `/pagou`.
-5. Register a PIX key with `/registerpix`.
-6. Query PIX by sender and bank.
-7. Delete an agenda payment with `/delete`.
-
----
-
-## License
-
-[MIT](LICENSE) © Prince Nyarko
+`tele_bot` communicates with `backend` only through `tele_bot/src/api/backendClient.js`. It does not import backend database or repository modules.

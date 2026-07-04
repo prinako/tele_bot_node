@@ -1,16 +1,40 @@
 services:
-  tele-bot:
-    build: .
-    container_name: tele-bot-node
+  backend:
+    build:
+      context: ./backend
+    container_name: tele-bot-backend
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
-    env_file:
-      - .env
     environment:
-      DATABASE_URL: postgres://telebot:${POSTGRES_PASSWORD}@postgres:5432/telebot
       NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgres://telebot:${POSTGRES_PASSWORD}@postgres:5432/telebot
+      ALLOWED_USERS: ${ALLOWED_USERS}
+      ADMIN_USERS: ${ADMIN_USERS}
+      LOG: ${LOG:-false}
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+    networks:
+      - telebot
+
+  tele_bot:
+    build:
+      context: ./tele_bot
+    container_name: tele-bot
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      BOT_TOKEN: ${BOT_TOKEN}
+      BACKEND_URL: http://backend:3000
+      BILLS_THREAD_ID: ${BILLS_THREAD_ID}
+      PAID_THREAD_ID: ${PAID_THREAD_ID}
+      CHAT_ID: ${CHAT_ID}
+      LOG: ${LOG:-false}
     networks:
       - telebot
 
@@ -24,7 +48,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - /Kojo/Docker/tele_bot_node/postgres:/var/lib/postgresql/data
-      - ./src/DB/postgres/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+      - ./backend/src/db/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U telebot -d telebot"]
       interval: 30s
