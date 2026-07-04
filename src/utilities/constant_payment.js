@@ -1,6 +1,6 @@
 /**
  * Return an array with an AgendaPayment object with default values.
- * The values are: chatId, senderId, topicId, messageThreadId, day, title, amount, description, pix, bank, isPaid, sadat, sam, prince.
+ * The values are: chatId, senderId, topicId, messageThreadId, day, title, amount, description, pix, bank, and isPaid.
  * The values are the same as the environment variables.
  * The method is used to create the default AgendaPayment object that is sent every day.
  * @return {Array} The array with the AgendaPayment object.
@@ -17,10 +17,7 @@ function constantPayment() {
         description: 'R$ 150,00/3 = R$ 50,00 por cada',
         pix: process.env.PIX,
         bank: 'Next',
-        isPaid: false,
-        sadat: false,
-        frank: false,
-        prince: false
+        isPaid: false
     }];
 }
 
