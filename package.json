@@ -15,22 +15,21 @@
     "node",
     "nodejs",
     "javascript",
-    "mongoose",
-    "mongodb",
+    "postgresql",
+    "pg",
     "telegram-bot",
     "telegram-bot-api",
     "telegram-bot-node",
     "telegram-bot-nodejs",
     "telegram-bot-javascript",
-    "telegram-bot-mongoose",
-    "telegram-bot-mongodb"
+    "telegram-bot-postgresql"
   ],
   "author": "prinako",
   "license": "ISC",
   "dependencies": {
     "moment": "^2.30.1",
-    "mongoose": "^9.2.4",
     "node-cron": "^4.2.1",
-    "node-telegram-bot-api": "^0.67.0"
+    "node-telegram-bot-api": "^0.67.0",
+    "pg": "^8.22.0"
   }
 }
