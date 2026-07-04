@@ -48,7 +48,7 @@ class paid{
         const msg = callbackQuery.message;
         const topicId = process.env.PAID_THREAD_ID;
 
-        const updateAgenda = await updateAgendaPayment(this.selectedAgendaId, data);
+        const updateAgenda = await updateAgendaPayment(this.selectedAgendaId, data, callbackQuery.from.id);
         if(updateAgenda) {
             const alert =  `A conta deª *${updateAgenda.title}* no valor de *${updateAgenda.amount}* com vencimento para *${updateAgenda.date}* foi marcada como paga. ✅`;
             this.bot.editMessageText(alert, {
