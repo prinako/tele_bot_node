@@ -1,42 +1,40 @@
+import { getBanks } from "../api/backendClient.js";
 
-/**
- * Generates a keyboard for selecting banks.
- * @return {Object[][]} a 2D array of objects where each object has a text and a callback_data property
- */
-function generateBankKeyboard(next) {
-    // List of banks to be displayed in the keyboard
-    const bankList = [
-        {text: 'Bradesco', callback_data: 'Bradesco'},
-        {text: 'Itau', callback_data: 'Itau'},
-        {text: 'Santander', callback_data: 'Santander'},
-        {text: 'Caixa', callback_data: 'Caixa'},
-        {text: 'Nubank', callback_data: 'Nubank'},
-        {text: 'Inter', callback_data: 'Inter'},
-        {text: 'Banco do Brasil', callback_data: 'Banco do Brasil'},
-        {text: 'Next', callback_data: 'Next'},
-        {text: 'C6 Bank', callback_data: 'C6 Bank'},
-        {text: 'Picpay', callback_data: 'Picpay'},
-        {text: 'Neon', callback_data: 'Neon'},
-        {text: 'Mercado Pago', callback_data: 'Mercado Pago'},
-        {text: 'Pagseguro', callback_data: 'Pagseguro'},
-        {text: 'Banco Pan', callback_data: 'Banco Pan'},
-    ];
+function generateBanksKeyboard(banks) {
+  const bankButtons = banks.map((bank) => ({
+    text: bank.name,
+    callback_data: `bank_${bank.name}`,
+  }));
 
-    // Group the list of banks in rows of 2
-    const groupedBanks = bankList.reduce((acc, cur, idx) => {
-        if (idx % 2 === 0) {
-            acc.push([cur]);
-        } else {
-            acc[acc.length - 1].push(cur);
-        }
-        return acc;
-    }, []);
+  return bankButtons.reduce((rows, button, index) => {
+    if (index % 2 === 0) {
+      rows.push([button]);
+    } else {
+      rows[rows.length - 1].push(button);
+    }
 
-    // Map the grouped banks to the format required by the Telegram API
-    return next( groupedBanks.map(b => b.map(bk => ({
-        text: bk.text,
-        callback_data: `bank_${bk.callback_data }`
-    }))));
+    return rows;
+  }, []);
 }
 
+async function loadBanksKeyboard() {
+  const banks = await getBanks();
+  if (!Array.isArray(banks) || banks.length === 0) {
+    return null;
+  }
+
+  return generateBanksKeyboard(banks);
+}
+
+async function generateBankKeyboard(next) {
+  const keyboard = await loadBanksKeyboard();
+
+  if (next) {
+    return next(keyboard);
+  }
+
+  return keyboard;
+}
+
+export { generateBanksKeyboard, loadBanksKeyboard };
 export default generateBankKeyboard;
