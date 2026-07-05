@@ -63,9 +63,14 @@ The PostgreSQL schema lives at `backend/src/db/schema.sql` and keeps the dynamic
 design:
 
 - `users`
+- `banks`
 - `pix_keys`
 - `agenda_payments`
 - `agenda_payment_members`
+
+Banks are stored in the backend PostgreSQL `banks` table and exposed through
+`GET /api/banks`. The Telegram bot uses this endpoint to build the bank
+keyboard.
 
 New agenda payments use explicit responsible users when provided. Otherwise,
 backend selects all users with `is_allowed = TRUE`. If none exist yet, it falls
