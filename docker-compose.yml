@@ -1,8 +1,6 @@
 services:
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: ghcr.io/prinako/tele_bot_node/backend:dev
     container_name: tele-bot-backend
     restart: unless-stopped
     depends_on:
@@ -21,9 +19,7 @@ services:
       - telebot
 
   tele_bot:
-    build:
-      context: ./tele_bot
-      dockerfile: Dockerfile
+    image: ghcr.io/prinako/tele_bot_node/tele_bot:dev
     container_name: tele-bot
     restart: unless-stopped
     depends_on:
