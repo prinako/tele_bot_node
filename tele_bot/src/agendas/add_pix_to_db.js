@@ -84,7 +84,19 @@ class AddPixToDB {
     const userId = msg.from.id;
     this._senderId = userId;
 
-    generateBankKeyboard((bankBtns) => {
+    try {
+      const bankBtns = await generateBankKeyboard();
+      if (!bankBtns) {
+        this.bot.sendMessage(
+          msg.chat.id,
+          "Não consegui carregar a lista de bancos agora. Tente novamente em alguns instantes.",
+          {
+            message_thread_id: msg.message_thread_id,
+          },
+        );
+        return;
+      }
+
       this.bot.sendMessage(
         msg.chat.id,
         "Por favor, selecione o tipo de conta:",
@@ -95,7 +107,16 @@ class AddPixToDB {
           },
         },
       );
-    });
+    } catch (error) {
+      console.error(error);
+      this.bot.sendMessage(
+        msg.chat.id,
+        "Não consegui carregar a lista de bancos agora. Tente novamente em alguns instantes.",
+        {
+          message_thread_id: msg.message_thread_id,
+        },
+      );
+    }
   }
 
   async addPixToDB(callbackQuery) {
@@ -112,7 +133,7 @@ class AddPixToDB {
 
     if (data.startsWith("bank_")) {
       this.isStagePixChave = true;
-      this.bank = data.split("_")[1];
+      this.bank = data.replace(/^bank_/, "");
       this.bot.editMessageText(
         `Por favor, digite seu PIX da sua conta  ${this.bank} :`,
         {
