@@ -442,7 +442,19 @@ class AgendaPayment {
       this.selectedDay = selectedDay;
       this.stage = "bank";
 
-      generateBankKeyboard((bankBtns) => {
+      try {
+        const bankBtns = await generateBankKeyboard();
+        if (!bankBtns) {
+          this.bot.editMessageText(
+            "Não consegui carregar a lista de bancos agora. Tente novamente em alguns instantes.",
+            {
+              chat_id: this.chat_id,
+              message_id: this.message_id,
+            },
+          );
+          return;
+        }
+
         this.bot.editMessageText("Por favor selecione seu banco:", {
           chat_id: this.chat_id,
           message_id: this.message_id,
@@ -451,12 +463,21 @@ class AgendaPayment {
             inline_keyboard: bankBtns,
           },
         });
-      });
+      } catch (error) {
+        console.error(error);
+        this.bot.editMessageText(
+          "Não consegui carregar a lista de bancos agora. Tente novamente em alguns instantes.",
+          {
+            chat_id: this.chat_id,
+            message_id: this.message_id,
+          },
+        );
+      }
     }
 
     // Handle bank selection
     if (data.startsWith("bank_")) {
-      const selectedBank = data.split("_")[1];
+      const selectedBank = data.replace(/^bank_/, "");
       this.selectedBank = selectedBank;
 
       const btn = await getUserPixBySenderBankAsKeyboard(
