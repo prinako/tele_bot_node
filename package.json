@@ -6,6 +6,7 @@
   "main": "docker-compose.yml",
   "scripts": {
     "start": "docker compose up -d",
+    "down": "docker compose down",
     "logs": "docker compose logs -f backend tele_bot",
     "dev:backend": "cd backend && npm run dev",
     "dev:bot": "cd tele_bot && npm run dev"
@@ -26,11 +27,5 @@
     "telegram-bot-postgresql"
   ],
   "author": "prinako",
-  "license": "ISC",
-  "dependencies": {
-    "moment": "^2.30.1",
-    "node-cron": "^4.2.1",
-    "node-telegram-bot-api": "^0.67.0",
-    "pg": "^8.22.0"
-  }
+  "license": "ISC"
 }
