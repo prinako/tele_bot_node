@@ -79,6 +79,10 @@ async function getUserPixBySenderBank(senderId, bank) {
   );
 }
 
+async function getBanks() {
+  return request("/api/banks");
+}
+
 async function updatePix(id, data) {
   return request(`/api/pix/${id}`, {
     method: "PATCH",
@@ -157,6 +161,7 @@ export {
   getAllAgendaPayment,
   getAllAgendaPaymentBySender,
   getAllAgendaPayments,
+  getBanks,
   getUserPixBySenderBank,
   insetAgendaPayment,
   insetPix,
