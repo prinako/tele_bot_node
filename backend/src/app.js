@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 
 import agendaRoutes from "./routes/agenda.routes.js";
+import banksRoutes from "./routes/banks.routes.js";
 import healthRoutes from "./routes/health.routes.js";
 import paymentMembersRoutes from "./routes/paymentMembers.routes.js";
 import pixRoutes from "./routes/pix.routes.js";
@@ -14,6 +15,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use(healthRoutes);
+app.use("/api/banks", banksRoutes);
 app.use(usersRoutes);
 app.use(pixRoutes);
 app.use(agendaRoutes);
