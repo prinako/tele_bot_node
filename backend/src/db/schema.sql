@@ -18,6 +18,18 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS banks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+  name TEXT NOT NULL UNIQUE,
+
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  sort_order INTEGER NOT NULL DEFAULT 100,
+
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS pix_keys (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
@@ -85,6 +97,9 @@ CREATE TABLE IF NOT EXISTS agenda_payment_members (
 CREATE INDEX IF NOT EXISTS idx_users_telegram_id
   ON users(telegram_id);
 
+CREATE INDEX IF NOT EXISTS idx_banks_active_sort
+  ON banks(is_active, sort_order, name);
+
 CREATE INDEX IF NOT EXISTS idx_pix_keys_user_id
   ON pix_keys(user_id);
 
@@ -108,3 +123,24 @@ CREATE INDEX IF NOT EXISTS idx_agenda_members_user
 
 CREATE INDEX IF NOT EXISTS idx_agenda_members_user_paid
   ON agenda_payment_members(user_id, is_paid);
+
+INSERT INTO banks (name, sort_order)
+VALUES
+  ('Bradesco', 10),
+  ('Itau', 20),
+  ('Santander', 30),
+  ('Caixa', 40),
+  ('Nubank', 50),
+  ('Inter', 60),
+  ('Banco do Brasil', 70),
+  ('Next', 80),
+  ('C6 Bank', 90),
+  ('Picpay', 100),
+  ('Neon', 110),
+  ('Mercado Pago', 120),
+  ('Pagseguro', 130),
+  ('Banco Pan', 140)
+ON CONFLICT (name)
+DO UPDATE SET
+  sort_order = EXCLUDED.sort_order,
+  updated_at = NOW();
