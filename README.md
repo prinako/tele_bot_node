@@ -6,7 +6,9 @@ Telegram bill-management bot split into two apps:
 Telegram <-> tele_bot <-> HTTP API <-> backend <-> PostgreSQL
 ```
 
-`tele_bot` owns Telegram polling, command flows, in-memory state, keyboards, and messages. `backend` owns PostgreSQL access, business rules, users, PIX keys, agenda payments, and dynamic payment members.
+`tele_bot` owns Telegram polling, command flows, in-memory state, keyboards, and
+messages. `backend` owns PostgreSQL access, business rules, users, PIX keys,
+agenda payments, and dynamic payment members.
 
 ## Structure
 
@@ -57,14 +59,17 @@ tele_bot/
 
 ## Database
 
-The PostgreSQL schema lives at `backend/src/db/schema.sql` and keeps the dynamic design:
+The PostgreSQL schema lives at `backend/src/db/schema.sql` and keeps the dynamic
+design:
 
 - `users`
 - `pix_keys`
 - `agenda_payments`
 - `agenda_payment_members`
 
-New agenda payments use explicit responsible users when provided. Otherwise, backend selects all users with `is_allowed = TRUE`. If none exist yet, it falls back to the creator only.
+New agenda payments use explicit responsible users when provided. Otherwise,
+backend selects all users with `is_allowed = TRUE`. If none exist yet, it falls
+back to the creator only.
 
 ## Environment
 
@@ -131,4 +136,6 @@ BACKEND_URL=http://localhost:3000 npm run dev
 
 ## Notes
 
-`tele_bot` communicates with `backend` only through `tele_bot/src/api/backendClient.js`. It does not import backend database or repository modules.
+`tele_bot` communicates with `backend` only through
+`tele_bot/src/api/backendClient.js`. It does not import backend database or
+repository modules.
