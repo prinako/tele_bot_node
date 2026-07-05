@@ -1,23 +1,19 @@
 import {
-    getAllowedTelegramUsers,
-    getUserByTelegramId,
-    upsertTelegramUser,
-} from '../repositories/users.repository.js';
+  getAllowedTelegramUsers,
+  getUserByTelegramId,
+  upsertTelegramUser,
+} from "../repositories/users.repository.js";
 
 async function upsertUser(data) {
-    return upsertTelegramUser(data);
+  return upsertTelegramUser(data);
 }
 
 async function getAllowedUsers() {
-    return getAllowedTelegramUsers();
+  return getAllowedTelegramUsers();
 }
 
 async function getUser(telegramId) {
-    return getUserByTelegramId(telegramId);
+  return getUserByTelegramId(telegramId);
 }
 
-export {
-    getAllowedUsers,
-    getUser,
-    upsertUser,
-};
+export { getAllowedUsers, getUser, upsertUser };

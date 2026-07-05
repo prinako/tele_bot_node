@@ -1,12 +1,12 @@
-import express from 'express';
-import cors from 'cors';
+import express from "express";
+import cors from "cors";
 
-import agendaRoutes from './routes/agenda.routes.js';
-import healthRoutes from './routes/health.routes.js';
-import paymentMembersRoutes from './routes/paymentMembers.routes.js';
-import pixRoutes from './routes/pix.routes.js';
-import usersRoutes from './routes/users.routes.js';
-import { error as logError } from './utils/logger.js';
+import agendaRoutes from "./routes/agenda.routes.js";
+import healthRoutes from "./routes/health.routes.js";
+import paymentMembersRoutes from "./routes/paymentMembers.routes.js";
+import pixRoutes from "./routes/pix.routes.js";
+import usersRoutes from "./routes/users.routes.js";
+import { error as logError } from "./utils/logger.js";
 
 const app = express();
 
@@ -20,14 +20,14 @@ app.use(agendaRoutes);
 app.use(paymentMembersRoutes);
 
 app.use((req, res) => {
-    res.status(404).json({ error: `Route not found: ${req.method} ${req.path}` });
+  res.status(404).json({ error: `Route not found: ${req.method} ${req.path}` });
 });
 
 app.use((err, _req, res, _next) => {
-    logError(err);
-    res.status(err.status || 500).json({
-        error: err.message || 'Internal server error',
-    });
+  logError(err);
+  res.status(err.status || 500).json({
+    error: err.message || "Internal server error",
+  });
 });
 
 export default app;

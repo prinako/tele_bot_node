@@ -1,27 +1,23 @@
 import {
-    getUserPixBySenderBank,
-    insetPix,
-    updatePix,
-} from '../repositories/pix.repository.js';
+  getUserPixBySenderBank,
+  insetPix,
+  updatePix,
+} from "../repositories/pix.repository.js";
 
 function registerPix(data) {
-    return new Promise((resolve) => {
-        insetPix(data, resolve);
-    });
+  return new Promise((resolve) => {
+    insetPix(data, resolve);
+  });
 }
 
 async function getPixBySenderBank(senderId, bank) {
-    return getUserPixBySenderBank(senderId, bank);
+  return getUserPixBySenderBank(senderId, bank);
 }
 
 function updatePixKey(id, data) {
-    return new Promise((resolve) => {
-        updatePix(id, data, resolve);
-    });
+  return new Promise((resolve) => {
+    updatePix(id, data, resolve);
+  });
 }
 
-export {
-    getPixBySenderBank,
-    registerPix,
-    updatePixKey,
-};
+export { getPixBySenderBank, registerPix, updatePixKey };

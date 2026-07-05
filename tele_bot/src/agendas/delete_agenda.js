@@ -1,10 +1,9 @@
 class DeleteAgenda {
+  constructor(bot) {
+    this.bot = bot;
+  }
 
-    constructor(bot) {
-        this.bot = bot;
-    }
-
-    deleteAgenda(msg) {}
+  deleteAgenda(msg) {}
 }
 
 export default DeleteAgenda;

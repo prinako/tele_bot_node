@@ -1,7 +1,5 @@
 function health(_req, res) {
-    res.json({ status: 'ok' });
+  res.json({ status: "ok" });
 }
 
-export {
-    health,
-};
+export { health };

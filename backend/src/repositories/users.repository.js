@@ -1,55 +1,58 @@
-import { getClient, query } from '../db/postgres.js';
+import { getClient, query } from "../db/postgres.js";
 
 function telegramDisplayName(user = {}) {
-    return user.displayName
-        || user.display_name
-        || [user.firstName || user.first_name, user.lastName || user.last_name].filter(Boolean).join(' ')
-        || user.username
-        || String(user.telegramId || user.telegram_id || user.senderId || '');
+  return user.displayName ||
+    user.display_name ||
+    [user.firstName || user.first_name, user.lastName || user.last_name].filter(
+      Boolean,
+    ).join(" ") ||
+    user.username ||
+    String(user.telegramId || user.telegram_id || user.senderId || "");
 }
 
 function userPayloadFromData(data = {}) {
-    const source = data.user || data.sender || data.from || {};
-    const telegramId = data.telegramId || data.senderId || source.id || source.telegram_id;
+  const source = data.user || data.sender || data.from || {};
+  const telegramId = data.telegramId || data.senderId || source.id ||
+    source.telegram_id;
 
-    return {
-        telegramId,
-        username: source.username ?? data.username ?? null,
-        firstName: source.first_name ?? source.firstName ?? data.firstName ?? null,
-        lastName: source.last_name ?? source.lastName ?? data.lastName ?? null,
-        displayName: telegramDisplayName({
-            displayName: data.displayName,
-            firstName: source.first_name ?? source.firstName ?? data.firstName,
-            lastName: source.last_name ?? source.lastName ?? data.lastName,
-            username: source.username ?? data.username,
-            telegramId,
-        }),
-    };
+  return {
+    telegramId,
+    username: source.username ?? data.username ?? null,
+    firstName: source.first_name ?? source.firstName ?? data.firstName ?? null,
+    lastName: source.last_name ?? source.lastName ?? data.lastName ?? null,
+    displayName: telegramDisplayName({
+      displayName: data.displayName,
+      firstName: source.first_name ?? source.firstName ?? data.firstName,
+      lastName: source.last_name ?? source.lastName ?? data.lastName,
+      username: source.username ?? data.username,
+      telegramId,
+    }),
+  };
 }
 
 function allowedTelegramIds() {
-    return (process.env.ALLOWED_USERS || '')
-        .split(',')
-        .map((id) => Number(id.trim()))
-        .filter(Boolean);
+  return (process.env.ALLOWED_USERS || "")
+    .split(",")
+    .map((id) => Number(id.trim()))
+    .filter(Boolean);
 }
 
 function adminTelegramIds() {
-    return (process.env.ADMIN_USERS || '')
-        .split(',')
-        .map((id) => Number(id.trim()))
-        .filter(Boolean);
+  return (process.env.ADMIN_USERS || "")
+    .split(",")
+    .map((id) => Number(id.trim()))
+    .filter(Boolean);
 }
 
 async function upsertUser(db, data = {}) {
-    const user = userPayloadFromData(data);
-    if (!user.telegramId) {
-        throw new Error('telegram_id is required to upsert a user');
-    }
+  const user = userPayloadFromData(data);
+  if (!user.telegramId) {
+    throw new Error("telegram_id is required to upsert a user");
+  }
 
-    const allowedIds = allowedTelegramIds();
-    const result = await db.query(
-        `INSERT INTO users (
+  const allowedIds = allowedTelegramIds();
+  const result = await db.query(
+    `INSERT INTO users (
             telegram_id,
             username,
             first_name,
@@ -70,68 +73,68 @@ async function upsertUser(db, data = {}) {
             last_seen_at = NOW(),
             updated_at = NOW()
         RETURNING *`,
-        [
-            user.telegramId,
-            user.username,
-            user.firstName,
-            user.lastName,
-            user.displayName,
-            adminTelegramIds().includes(Number(user.telegramId)),
-            allowedIds.length === 0 || allowedIds.includes(Number(user.telegramId)),
-        ],
-    );
+    [
+      user.telegramId,
+      user.username,
+      user.firstName,
+      user.lastName,
+      user.displayName,
+      adminTelegramIds().includes(Number(user.telegramId)),
+      allowedIds.length === 0 || allowedIds.includes(Number(user.telegramId)),
+    ],
+  );
 
-    return result.rows[0];
+  return result.rows[0];
 }
 
 async function upsertTelegramUser(data = {}) {
-    const db = await getClient();
+  const db = await getClient();
 
-    try {
-        return await upsertUser(db, data);
-    } finally {
-        db.release();
-    }
+  try {
+    return await upsertUser(db, data);
+  } finally {
+    db.release();
+  }
 }
 
 async function findUserByTelegramId(db, telegramId) {
-    const result = await db.query(
-        `SELECT *
+  const result = await db.query(
+    `SELECT *
          FROM users
          WHERE telegram_id = $1`,
-        [telegramId],
-    );
+    [telegramId],
+  );
 
-    return result.rows[0] || null;
+  return result.rows[0] || null;
 }
 
 async function getUserByTelegramId(telegramId) {
-    return findUserByTelegramId({ query }, telegramId);
+  return findUserByTelegramId({ query }, telegramId);
 }
 
 async function getAllowedUsers(db) {
-    const result = await db.query(
-        `SELECT *
+  const result = await db.query(
+    `SELECT *
          FROM users
          WHERE is_allowed = TRUE
          ORDER BY
             display_name ASC NULLS LAST,
             telegram_id ASC`,
-    );
+  );
 
-    return result.rows;
+  return result.rows;
 }
 
 async function getAllowedTelegramUsers() {
-    return getAllowedUsers({ query });
+  return getAllowedUsers({ query });
 }
 
 export {
-    findUserByTelegramId,
-    getAllowedTelegramUsers,
-    getAllowedUsers,
-    getUserByTelegramId,
-    telegramDisplayName,
-    upsertTelegramUser,
-    upsertUser,
+  findUserByTelegramId,
+  getAllowedTelegramUsers,
+  getAllowedUsers,
+  getUserByTelegramId,
+  telegramDisplayName,
+  upsertTelegramUser,
+  upsertUser,
 };

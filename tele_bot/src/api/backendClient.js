@@ -1,157 +1,169 @@
-import env from '../config/env.js';
+import env from "../config/env.js";
 
-const baseUrl = env.backendUrl.replace(/\/$/, '');
+const baseUrl = env.backendUrl.replace(/\/$/, "");
 
 async function request(path, options = {}) {
-    const response = await fetch(`${baseUrl}${path}`, {
-        ...options,
-        headers: {
-            'Content-Type': 'application/json',
-            ...(options.headers || {}),
-        },
-    });
+  const response = await fetch(`${baseUrl}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
 
-    const data = await response.json().catch(() => null);
-    if (!response.ok) {
-        const error = new Error(data?.error || `Backend request failed: ${response.status}`);
-        error.status = response.status;
-        error.data = data;
-        throw error;
-    }
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    const error = new Error(
+      data?.error || `Backend request failed: ${response.status}`,
+    );
+    error.status = response.status;
+    error.data = data;
+    throw error;
+  }
 
-    return data;
+  return data;
 }
 
 async function upsertUser(user) {
-    return request('/api/users/upsert', {
-        method: 'POST',
-        body: JSON.stringify(user),
-    });
+  return request("/api/users/upsert", {
+    method: "POST",
+    body: JSON.stringify(user),
+  });
 }
 
 async function createAgendaPayment(data) {
-    return request('/api/agenda', {
-        method: 'POST',
-        body: JSON.stringify(data),
-    });
+  return request("/api/agenda", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }
 
 async function getAllAgendaPayments() {
-    return request('/api/agenda');
+  return request("/api/agenda");
 }
 
 async function getAgendaPaymentsByUser(telegramId) {
-    return request(`/api/agenda/user/${telegramId}`);
+  return request(`/api/agenda/user/${telegramId}`);
 }
 
 async function getAgendaPaymentById(id) {
-    return request(`/api/agenda/${id}`);
+  return request(`/api/agenda/${id}`);
 }
 
 async function updateAgendaPayment(id, data, telegramId = null) {
-    const query = telegramId ? `?telegramId=${encodeURIComponent(telegramId)}` : '';
-    return request(`/api/agenda/${id}${query}`, {
-        method: 'PATCH',
-        body: JSON.stringify(data),
-    });
+  const query = telegramId
+    ? `?telegramId=${encodeURIComponent(telegramId)}`
+    : "";
+  return request(`/api/agenda/${id}${query}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
 }
 
 async function deleteAgendaPayment(id) {
-    return request(`/api/agenda/${id}`, { method: 'DELETE' });
+  return request(`/api/agenda/${id}`, { method: "DELETE" });
 }
 
 async function registerPix(data) {
-    return request('/api/pix', {
-        method: 'POST',
-        body: JSON.stringify(data),
-    });
+  return request("/api/pix", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }
 
 async function getUserPixBySenderBank(senderId, bank) {
-    return request(`/api/pix?senderId=${encodeURIComponent(senderId)}&bank=${encodeURIComponent(bank)}`);
+  return request(
+    `/api/pix?senderId=${encodeURIComponent(senderId)}&bank=${
+      encodeURIComponent(bank)
+    }`,
+  );
 }
 
 async function updatePix(id, data) {
-    return request(`/api/pix/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(data),
-    });
+  return request(`/api/pix/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
 }
 
 async function getAgendaPaymentMembers(id) {
-    return request(`/api/agenda/${id}/members`);
+  return request(`/api/agenda/${id}/members`);
 }
 
 async function markAgendaPaymentMemberPaid(id, telegramId) {
-    return request(`/api/agenda/${id}/members/${telegramId}/paid`, { method: 'PATCH' });
+  return request(`/api/agenda/${id}/members/${telegramId}/paid`, {
+    method: "PATCH",
+  });
 }
 
 async function markAgendaPaymentMemberUnpaid(id, telegramId) {
-    return request(`/api/agenda/${id}/members/${telegramId}/unpaid`, { method: 'PATCH' });
+  return request(`/api/agenda/${id}/members/${telegramId}/unpaid`, {
+    method: "PATCH",
+  });
 }
 
 function insetAgendaPayment(data, next) {
-    createAgendaPayment(data)
-        .then((agenda) => next(agenda))
-        .catch((error) => {
-            console.error(error);
-            next(false);
-        });
+  createAgendaPayment(data)
+    .then((agenda) => next(agenda))
+    .catch((error) => {
+      console.error(error);
+      next(false);
+    });
 }
 
 function getAllAgendaPayment(next) {
-    getAllAgendaPayments()
-        .then((agendas) => next(agendas))
-        .catch((error) => {
-            console.error(error);
-            next(false);
-        });
+  getAllAgendaPayments()
+    .then((agendas) => next(agendas))
+    .catch((error) => {
+      console.error(error);
+      next(false);
+    });
 }
 
 async function getAllAgendaPaymentBySender(senderId) {
-    try {
-        return await getAgendaPaymentsByUser(senderId);
-    } catch (error) {
-        console.error(error);
-        return false;
-    }
+  try {
+    return await getAgendaPaymentsByUser(senderId);
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
 }
 
 async function insetPix(data, next) {
-    try {
-        const pix = await registerPix(data);
-        return next({ error: false, returnData: pix });
-    } catch (error) {
-        console.error(error);
-        return next({ error: true, returnData: error.data || error });
-    }
+  try {
+    const pix = await registerPix(data);
+    return next({ error: false, returnData: pix });
+  } catch (error) {
+    console.error(error);
+    return next({ error: true, returnData: error.data || error });
+  }
 }
 
 function updatePixWithCallback(id, data, next) {
-    updatePix(id, data)
-        .then((pix) => next(pix))
-        .catch((error) => {
-            console.error(error);
-            next(false);
-        });
+  updatePix(id, data)
+    .then((pix) => next(pix))
+    .catch((error) => {
+      console.error(error);
+      next(false);
+    });
 }
 
 export {
-    createAgendaPayment,
-    deleteAgendaPayment,
-    getAgendaPaymentById,
-    getAgendaPaymentMembers,
-    getAgendaPaymentsByUser,
-    getAllAgendaPayment,
-    getAllAgendaPaymentBySender,
-    getAllAgendaPayments,
-    getUserPixBySenderBank,
-    insetAgendaPayment,
-    insetPix,
-    markAgendaPaymentMemberPaid,
-    markAgendaPaymentMemberUnpaid,
-    registerPix,
-    updateAgendaPayment,
-    updatePixWithCallback as updatePix,
-    upsertUser,
+  createAgendaPayment,
+  deleteAgendaPayment,
+  getAgendaPaymentById,
+  getAgendaPaymentMembers,
+  getAgendaPaymentsByUser,
+  getAllAgendaPayment,
+  getAllAgendaPaymentBySender,
+  getAllAgendaPayments,
+  getUserPixBySenderBank,
+  insetAgendaPayment,
+  insetPix,
+  markAgendaPaymentMemberPaid,
+  markAgendaPaymentMemberUnpaid,
+  registerPix,
+  updateAgendaPayment,
+  updatePixWithCallback as updatePix,
+  upsertUser,
 };
