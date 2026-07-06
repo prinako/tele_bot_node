@@ -38,6 +38,16 @@ async function getByTelegramId(req, res, next) {
   }
 }
 
+async function listBotInstallations(req, res, next) {
+  try {
+    res.json(
+      await usersService.listBotInstallations(req.params.telegramUserId),
+    );
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function patch(req, res, next) {
   try {
     const user = await usersService.updateUser(req.params.telegramId, req.body);
@@ -51,4 +61,4 @@ async function patch(req, res, next) {
   }
 }
 
-export { allowed, getByTelegramId, list, patch, upsert };
+export { allowed, getByTelegramId, list, listBotInstallations, patch, upsert };

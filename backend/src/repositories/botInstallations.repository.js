@@ -1,7 +1,6 @@
 import { query } from "../db/postgres.js";
 
 const INSTALLATION_CHAT_TYPES = new Set([
-  "private",
   "group",
   "supergroup",
   "channel",
@@ -268,9 +267,36 @@ async function getBotInstallationUsersByTelegramChatId(telegramChatId) {
   return result.rows.map(mapInstallationUser);
 }
 
+async function getBotInstallationsByTelegramUserId(telegramUserId) {
+  const result = await query(
+    `SELECT
+        installations.*,
+        installation_users.first_seen_at AS membership_first_seen_at,
+        installation_users.last_seen_at AS membership_last_seen_at,
+        installation_users.message_count
+      FROM bot_installation_users installation_users
+      JOIN bot_installations installations
+        ON installations.id = installation_users.bot_installation_id
+      WHERE installation_users.telegram_user_id = $1
+      ORDER BY
+        installation_users.last_seen_at DESC,
+        installations.title ASC NULLS LAST,
+        installations.telegram_chat_id ASC`,
+    [telegramUserId],
+  );
+
+  return result.rows.map((row) => ({
+    ...mapInstallation(row),
+    membershipFirstSeenAt: row.membership_first_seen_at,
+    membershipLastSeenAt: row.membership_last_seen_at,
+    messageCount: row.message_count,
+  }));
+}
+
 export {
   getBotInstallationByTelegramChatId,
   getBotInstallations,
+  getBotInstallationsByTelegramUserId,
   getBotInstallationTopicsByTelegramChatId,
   getBotInstallationUsersByTelegramChatId,
   isInstallationChatType,

@@ -26,7 +26,7 @@ async function upsertInstallation(data = {}) {
   requireValue(data.chatType, "chatType is required");
 
   if (!isInstallationChatType(data.chatType)) {
-    throw badRequest("chatType must be private, group, supergroup, or channel");
+    throw badRequest("chatType must be group, supergroup, or channel");
   }
 
   return upsertBotInstallation(data);

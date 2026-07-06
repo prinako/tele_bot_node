@@ -4,17 +4,10 @@ import {
 } from "../api/backendClient.js";
 
 const INSTALLATION_CHAT_TYPES = new Set([
-  "private",
   "group",
   "supergroup",
   "channel",
 ]);
-
-function privateChatTitle(user = {}) {
-  return [user.first_name, user.last_name].filter(Boolean).join(" ") ||
-    user.username ||
-    null;
-}
 
 async function registerBotInstallation(msg) {
   const chat = msg?.chat;
@@ -27,7 +20,7 @@ async function registerBotInstallation(msg) {
     const installation = await upsertBotInstallation({
       telegramChatId: chat.id,
       chatType: chat.type,
-      title: chat.title || privateChatTitle(msg.from) || null,
+      title: chat.title || null,
       username: chat.username || null,
       addedByTelegramUserId: msg.from?.id || null,
     });

@@ -109,11 +109,12 @@ New agenda payments use explicit responsible users when provided. Otherwise,
 backend selects all users with `is_allowed = TRUE`. If none exist yet, it falls
 back to the creator only.
 
-`bot_installations` stores Telegram private chats, groups, supergroups, and
-channels where the bot is present. `users` stores people who use the bot.
-`bot_installation_users` links users to the chat where they were seen and tracks
-first seen, last seen, and message count. `bot_installation_topics` stores forum
-topics/message threads inside groups, supergroups, and channels.
+`bot_installations` stores Telegram groups, supergroups, and channels where the
+bot is present. Private chats are not stored as bot installations; private users
+are stored in `users`. `bot_installation_users` links users to the
+groups/channels where they were seen and tracks first seen, last seen, and
+message count. `bot_installation_topics` stores forum topics/message threads
+inside groups, supergroups, and channels.
 
 The schema is not in production yet. `schema.sql` is the single source of truth
 and runs automatically only on a **new** PostgreSQL data directory. After schema
@@ -155,16 +156,16 @@ VITE_BACKEND_URL=http://localhost:3000
 
 ```bash
 docker compose down --remove-orphans
-docker compose build --no-cache admin_panel
+docker compose pull
 docker compose up -d
 docker compose logs -f admin_panel
 ```
 
 The PostgreSQL data volume is mounted at `/Kojo/Docker/tele_bot_node/postgres`.
 
-The production admin panel is built by `admin_panel/Dockerfile`. Vite runs only
-during the Node build stage, then nginx serves the generated `dist` files on
-container port `80`.
+The production admin panel image is built from `admin_panel/Dockerfile` by the
+Docker image workflow. Vite runs only during the Node build stage, then nginx
+serves the generated `dist` files on container port `80`.
 
 ## Docker Development
 
@@ -203,9 +204,9 @@ For Docker, `VITE_BACKEND_URL` is a browser-side URL baked into the Vite build.
 The default is `http://localhost:3000`, so the backend port must be exposed to
 the browser.
 
-The admin panel includes a Groups & Channels page showing Telegram private
-chats, groups, supergroups, and channels where the bot is active, plus users and
-topics registered under each chat.
+The admin panel includes a Groups & Channels page showing Telegram groups,
+supergroups, and channels where the bot is active, plus users and topics
+registered under each chat.
 
 Do not expose the admin panel publicly until authentication is added. Use it
 only on LAN/VPN or behind a protected reverse proxy.
