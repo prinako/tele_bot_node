@@ -35,15 +35,16 @@ CREATE TABLE IF NOT EXISTS pix_keys (
 
   user_id UUID NOT NULL REFERENCES users(id)
     ON DELETE CASCADE,
+  bank_id UUID NOT NULL REFERENCES banks(id)
+    ON DELETE RESTRICT,
 
   pix TEXT NOT NULL,
-  bank TEXT NOT NULL,
 
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
   CONSTRAINT unique_pix_key UNIQUE (pix),
-  CONSTRAINT unique_user_bank_pix UNIQUE (user_id, bank, pix)
+  CONSTRAINT unique_user_bank_pix UNIQUE (user_id, bank_id, pix)
 );
 
 CREATE TABLE IF NOT EXISTS agenda_payments (
@@ -103,8 +104,11 @@ CREATE INDEX IF NOT EXISTS idx_banks_active_sort
 CREATE INDEX IF NOT EXISTS idx_pix_keys_user_id
   ON pix_keys(user_id);
 
+CREATE INDEX IF NOT EXISTS idx_pix_keys_bank_id
+  ON pix_keys(bank_id);
+
 CREATE INDEX IF NOT EXISTS idx_pix_keys_user_bank
-  ON pix_keys(user_id, bank);
+  ON pix_keys(user_id, bank_id);
 
 CREATE INDEX IF NOT EXISTS idx_agenda_payments_created_by
   ON agenda_payments(created_by_user_id);
