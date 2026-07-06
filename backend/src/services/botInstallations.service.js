@@ -7,6 +7,7 @@ import {
   upsertBotInstallation,
   upsertBotInstallationTopic,
   upsertBotInstallationUser,
+  updateBotInstallationTopicSettings,
 } from "../repositories/botInstallations.repository.js";
 
 function badRequest(message) {
@@ -86,6 +87,21 @@ async function listUsers(telegramChatId) {
   return getBotInstallationUsersByTelegramChatId(telegramChatId);
 }
 
+async function updateTopicSettings(telegramChatId, data = {}) {
+  const installation = await updateBotInstallationTopicSettings(
+    telegramChatId,
+    data,
+  );
+
+  if (!installation) {
+    const error = new Error("Bot installation not found");
+    error.status = 404;
+    throw error;
+  }
+
+  return installation;
+}
+
 export {
   getInstallation,
   listInstallations,
@@ -94,4 +110,5 @@ export {
   upsertInstallation,
   upsertInstallationUser,
   upsertTopic,
+  updateTopicSettings,
 };

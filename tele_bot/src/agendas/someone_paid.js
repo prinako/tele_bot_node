@@ -4,6 +4,7 @@
 
 import {
   getAgendaPaymentById,
+  getBotInstallation,
   updateAgendaPayment,
 } from "../api/backendClient.js";
 import agendaFormatter from "../utilities/agenda_formatter.js";
@@ -126,8 +127,19 @@ class SomeonePaid {
         },
       });
 
+      const installation = await getBotInstallation(updateAgenda.chatId).catch(
+        (error) => {
+          console.error(error);
+          return null;
+        },
+      );
+      const paidTopicThreadId =
+        installation?.agendaPaidTopic?.messageThreadId ||
+        process.env.PAID_THREAD_ID ||
+        null;
+
       this.bot.sendMessage(updateAgenda.chatId, formattedAgenda, {
-        message_thread_id: updateAgenda.topicId,
+        message_thread_id: paidTopicThreadId,
         message_id: updateAgenda.messageThreadId,
         parse_mode: "Markdown",
       });

@@ -83,11 +83,25 @@ async function listUsers(req, res, next) {
   }
 }
 
+async function patchTopicSettings(req, res, next) {
+  try {
+    const installation = await botInstallationsService.updateTopicSettings(
+      req.params.telegramChatId,
+      req.body,
+    );
+
+    return res.json(installation);
+  } catch (error) {
+    return next(error);
+  }
+}
+
 export {
   getByTelegramChatId,
   list,
   listTopics,
   listUsers,
+  patchTopicSettings,
   upsert,
   upsertTopic,
   upsertUser,

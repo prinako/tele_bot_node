@@ -4,6 +4,7 @@ import {
   list,
   listTopics,
   listUsers,
+  patchTopicSettings,
   upsert,
   upsertTopic,
   upsertUser,
@@ -15,6 +16,7 @@ router.post("/upsert", upsert);
 router.get("/", list);
 router.post("/topics/upsert", upsertTopic);
 router.post("/users/upsert", upsertUser);
+router.patch("/:telegramChatId/topic-settings", patchTopicSettings);
 router.get("/:telegramChatId/users", listUsers);
 router.get("/:telegramChatId/topics", listTopics);
 router.get("/:telegramChatId", getByTelegramChatId);

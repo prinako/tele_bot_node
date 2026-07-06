@@ -112,6 +112,13 @@ export function getBotInstallationUsers(telegramChatId) {
   return request(`/api/bot-installations/${telegramChatId}/users`);
 }
 
+export function updateBotInstallationTopicSettings(telegramChatId, data) {
+  return request(`/api/bot-installations/${telegramChatId}/topic-settings`, {
+    method: "PATCH",
+    body: body(data),
+  });
+}
+
 export function markAgendaMemberPaid(id, telegramId) {
   return request(`/api/agenda/${id}/members/${telegramId}/paid`, {
     method: "PATCH",

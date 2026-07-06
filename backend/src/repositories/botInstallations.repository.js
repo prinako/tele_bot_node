@@ -21,6 +21,22 @@ function mapInstallation(row) {
       ? Number(row.added_by_telegram_user_id)
       : null,
     botStatus: row.bot_status,
+    agendaRegisterTopicId: row.agenda_register_topic_id,
+    agendaPaidTopicId: row.agenda_paid_topic_id,
+    agendaRegisterTopic: row.register_topic_id
+      ? {
+        id: row.register_topic_id,
+        messageThreadId: Number(row.register_topic_message_thread_id),
+        name: row.register_topic_name,
+      }
+      : null,
+    agendaPaidTopic: row.paid_topic_id
+      ? {
+        id: row.paid_topic_id,
+        messageThreadId: Number(row.paid_topic_message_thread_id),
+        name: row.paid_topic_name,
+      }
+      : null,
     firstSeenAt: row.first_seen_at,
     lastSeenAt: row.last_seen_at,
     createdAt: row.created_at,
@@ -132,13 +148,83 @@ async function getBotInstallations() {
 
 async function getBotInstallationByTelegramChatId(telegramChatId) {
   const result = await query(
-    `SELECT *
-       FROM bot_installations
-      WHERE telegram_chat_id = $1`,
+    `SELECT
+        installations.*,
+        register_topic.id AS register_topic_id,
+        register_topic.message_thread_id AS register_topic_message_thread_id,
+        register_topic.name AS register_topic_name,
+        paid_topic.id AS paid_topic_id,
+        paid_topic.message_thread_id AS paid_topic_message_thread_id,
+        paid_topic.name AS paid_topic_name
+       FROM bot_installations installations
+       LEFT JOIN bot_installation_topics register_topic
+         ON register_topic.id = installations.agenda_register_topic_id
+       LEFT JOIN bot_installation_topics paid_topic
+         ON paid_topic.id = installations.agenda_paid_topic_id
+      WHERE installations.telegram_chat_id = $1`,
     [telegramChatId],
   );
 
   return mapInstallation(result.rows[0]) || null;
+}
+
+async function topicBelongsToInstallation(topicId, botInstallationId) {
+  if (!topicId) {
+    return true;
+  }
+
+  const result = await query(
+    `SELECT id
+       FROM bot_installation_topics
+      WHERE id = $1
+        AND bot_installation_id = $2
+      LIMIT 1`,
+    [topicId, botInstallationId],
+  );
+
+  return result.rowCount > 0;
+}
+
+async function updateBotInstallationTopicSettings(telegramChatId, data = {}) {
+  const installation = await getBotInstallationByTelegramChatId(telegramChatId);
+  if (!installation) {
+    return null;
+  }
+
+  const agendaRegisterTopicId = data.agendaRegisterTopicId || null;
+  const agendaPaidTopicId = data.agendaPaidTopicId || null;
+
+  if (
+    !(await topicBelongsToInstallation(
+      agendaRegisterTopicId,
+      installation.id,
+    ))
+  ) {
+    const error = new Error(
+      "agendaRegisterTopicId must belong to the selected bot installation",
+    );
+    error.status = 400;
+    throw error;
+  }
+
+  if (!(await topicBelongsToInstallation(agendaPaidTopicId, installation.id))) {
+    const error = new Error(
+      "agendaPaidTopicId must belong to the selected bot installation",
+    );
+    error.status = 400;
+    throw error;
+  }
+
+  await query(
+    `UPDATE bot_installations
+        SET agenda_register_topic_id = $1,
+            agenda_paid_topic_id = $2,
+            updated_at = NOW()
+      WHERE telegram_chat_id = $3`,
+    [agendaRegisterTopicId, agendaPaidTopicId, telegramChatId],
+  );
+
+  return getBotInstallationByTelegramChatId(telegramChatId);
 }
 
 async function upsertBotInstallationTopic(data = {}) {
@@ -309,4 +395,5 @@ export {
   upsertBotInstallation,
   upsertBotInstallationTopic,
   upsertBotInstallationUser,
+  updateBotInstallationTopicSettings,
 };

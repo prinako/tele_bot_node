@@ -1,5 +1,6 @@
 import moment from "moment";
 import {
+  getBotInstallation,
   getUserBotInstallations,
   insetAgendaPayment,
   insetPix,
@@ -334,14 +335,24 @@ class AgendaPayment {
 
   // Function to send a final summary message like the image
   async sendFinalSummary(chatId, messageThreadId, userId, user = {}) {
+    const installation = await getBotInstallation(this.selectedChatId).catch(
+      (error) => {
+        console.error(error);
+        return null;
+      },
+    );
+    const agendaTopicThreadId =
+      installation?.agendaRegisterTopic?.messageThreadId ||
+      process.env.BILLS_THREAD_ID ||
+      null;
     const dueDate =
       `${this.selectedDay}/${this.selectedMonth}/${moment().year()}`;
     const dataToDB = {
       chatId: this.selectedChatId,
       senderId: userId,
       user,
-      messageThreadId: messageThreadId,
-      topicId: this.selectedTopicId || null,
+      messageThreadId: agendaTopicThreadId,
+      topicId: agendaTopicThreadId,
       date: dueDate,
       title: this.selectedTitle,
       amount: this.selectedAmount,
@@ -364,7 +375,7 @@ class AgendaPayment {
       const paymentSummary = agendaFormatter(isInseted);
       // Send the summary message
       this.bot.sendMessage(isInseted.chatId, paymentSummary, {
-        message_thread_id: this.selectedTopicId,
+        message_thread_id: agendaTopicThreadId,
         parse_mode: "Markdown",
         reply_markup: {
           remove_keyboard: true,

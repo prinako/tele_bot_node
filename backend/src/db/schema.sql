@@ -143,6 +143,12 @@ CREATE TABLE IF NOT EXISTS bot_installation_topics (
   )
 );
 
+ALTER TABLE bot_installations
+  ADD COLUMN IF NOT EXISTS agenda_register_topic_id UUID
+    REFERENCES bot_installation_topics(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS agenda_paid_topic_id UUID
+    REFERENCES bot_installation_topics(id) ON DELETE SET NULL;
+
 CREATE TABLE IF NOT EXISTS bot_installation_users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
@@ -208,6 +214,12 @@ CREATE INDEX IF NOT EXISTS idx_bot_installations_chat_type
 
 CREATE INDEX IF NOT EXISTS idx_bot_installations_status
   ON bot_installations(bot_status);
+
+CREATE INDEX IF NOT EXISTS idx_bot_installations_agenda_register_topic
+  ON bot_installations(agenda_register_topic_id);
+
+CREATE INDEX IF NOT EXISTS idx_bot_installations_agenda_paid_topic
+  ON bot_installations(agenda_paid_topic_id);
 
 CREATE INDEX IF NOT EXISTS idx_bot_installation_topics_installation
   ON bot_installation_topics(bot_installation_id);

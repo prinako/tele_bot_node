@@ -60,6 +60,10 @@ async function getBotInstallationTopics(telegramChatId) {
   return request(`/api/bot-installations/${telegramChatId}/topics`);
 }
 
+async function getBotInstallation(telegramChatId) {
+  return request(`/api/bot-installations/${telegramChatId}`);
+}
+
 async function getUserBotInstallations(telegramUserId) {
   return request(`/api/users/${telegramUserId}/bot-installations`);
 }
@@ -195,6 +199,7 @@ export {
   getAllAgendaPaymentBySender,
   getAllAgendaPayments,
   getBanks,
+  getBotInstallation,
   getBotInstallations,
   getBotInstallationTopics,
   getUserPixBySenderBank,

@@ -1,7 +1,10 @@
 // const allAgendaAsKeyboard = require("../utilities/all_agenda_as_keyboard");
 // const agendaFormatter = require("../utilities/agenda_formatter");
 
-import { updateAgendaPayment } from "../api/backendClient.js";
+import {
+  getBotInstallation,
+  updateAgendaPayment,
+} from "../api/backendClient.js";
 import allAgendaAsKeyboard from "../utilities/all_agenda_as_keyboard.js";
 import agendaFormatter from "../utilities/agenda_formatter.js";
 
@@ -45,7 +48,6 @@ class paid {
   }
   async addToDatabase(callbackQuery, data) {
     const msg = callbackQuery.message;
-    const topicId = process.env.PAID_THREAD_ID;
 
     const updateAgenda = await updateAgendaPayment(
       this.selectedAgendaId,
@@ -65,8 +67,19 @@ class paid {
         },
       });
 
+      const installation = await getBotInstallation(updateAgenda.chatId).catch(
+        (error) => {
+          console.error(error);
+          return null;
+        },
+      );
+      const paidTopicThreadId =
+        installation?.agendaPaidTopic?.messageThreadId ||
+        process.env.PAID_THREAD_ID ||
+        null;
+
       this.bot.sendMessage(updateAgenda.chatId, alert, {
-        message_thread_id: topicId,
+        message_thread_id: paidTopicThreadId,
         message_id: updateAgenda.messageThreadId,
         parse_mode: "Markdown",
       });

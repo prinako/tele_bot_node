@@ -75,6 +75,7 @@ admin_panel/
 - `GET /api/bot-installations/:telegramChatId/topics`
 - `POST /api/bot-installations/users/upsert`
 - `GET /api/bot-installations/:telegramChatId/users`
+- `PATCH /api/bot-installations/:telegramChatId/topic-settings`
 - `POST /api/agenda`
 - `GET /api/agenda`
 - `GET /api/agenda/user/:telegramId`
@@ -123,6 +124,11 @@ groups/channels where they were seen and tracks first seen, last seen, and
 message count. `bot_installation_topics` stores forum topics/message threads
 inside groups, supergroups, and channels.
 
+`bot_installations` can store per-chat agenda topic settings:
+
+- `agenda_register_topic_id`
+- `agenda_paid_topic_id`
+
 The schema is not in production yet. `schema.sql` is the single source of truth
 and runs automatically only on a **new** PostgreSQL data directory. After schema
 changes during development, reset the database:
@@ -149,8 +155,8 @@ BACKEND_URL=http://backend:3000
 ALLOWED_USERS=
 ADMIN_USERS=
 
-BILLS_THREAD_ID=
-PAID_THREAD_ID=
+BILLS_THREAD_ID= # legacy fallback only
+PAID_THREAD_ID= # legacy fallback only
 CHAT_ID=
 
 LOG=false
@@ -214,6 +220,10 @@ the browser.
 The admin panel includes a Groups & Channels page showing Telegram groups,
 supergroups, and channels where the bot is active, plus users and topics
 registered under each chat.
+
+In Groups & Channels -> Chat Details -> Settings, admins can choose which
+registered Telegram topic receives new agenda/bill messages and which topic
+receives paid confirmations.
 
 Do not expose the admin panel publicly until authentication is added. Use it
 only on LAN/VPN or behind a protected reverse proxy.
