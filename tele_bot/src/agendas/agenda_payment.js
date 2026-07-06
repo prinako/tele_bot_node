@@ -1,6 +1,7 @@
 import moment from "moment";
 import {
   getBotInstallation,
+  getBotInstallationUsers,
   getUserBotInstallations,
   insetAgendaPayment,
   insetPix,
@@ -40,6 +41,8 @@ class AgendaPayment {
     this._selectedChatId = null;
     this._selectedChatTitle = null;
     this._selectedChatType = null;
+    this._availableMembers = [];
+    this._selectedMemberTelegramIds = new Set();
     this._selectedMonth = "";
     this._selectedDay = "";
     this._selectedTitle = "";
@@ -238,9 +241,54 @@ class AgendaPayment {
     return this._selectedChatType;
   }
 
+  set availableMembers(v) {
+    this._availableMembers = Array.isArray(v) ? v : [];
+  }
+  get availableMembers() {
+    return this._availableMembers;
+  }
+
+  set selectedMemberTelegramIds(v) {
+    this._selectedMemberTelegramIds = v instanceof Set ? v : new Set(v || []);
+  }
+  get selectedMemberTelegramIds() {
+    return this._selectedMemberTelegramIds;
+  }
+
   installationLabel(installation) {
     return installation.title || installation.username ||
       String(installation.telegramChatId);
+  }
+
+  memberLabel(member) {
+    const telegramId = Number(member.telegramId || member.telegramUserId);
+    return member.displayName ||
+      [member.firstName, member.lastName].filter(Boolean).join(" ") ||
+      member.username ||
+      String(telegramId);
+  }
+
+  generateMembersKeyboard() {
+    const rows = this.availableMembers.map((member) => {
+      const telegramId = Number(member.telegramId || member.telegramUserId);
+      const selected = this.selectedMemberTelegramIds.has(telegramId);
+
+      return [
+        {
+          text: `${selected ? "✅" : "⬜"} ${this.memberLabel(member)}`,
+          callback_data: `agenda_member_${telegramId}`,
+        },
+      ];
+    });
+
+    rows.push([
+      {
+        text: "✅ Confirmar selecionados",
+        callback_data: "agenda_members_done",
+      },
+    ]);
+
+    return rows;
   }
 
   async start(msg) {
@@ -359,13 +407,15 @@ class AgendaPayment {
       description: this.selectedDescription,
       pix: this.selectedPix,
       bank: this.selectedBank,
+      responsibleTelegramIds: Array.from(this.selectedMemberTelegramIds || []),
     };
 
     await insetAgendaPayment(dataToDB, (isInseted) => {
-      if (!isInseted) {
+      if (!isInseted || isInseted.error) {
         this.bot.sendMessage(
           chatId,
-          "Houve um erro ao registrar a fatura. Por favor, tente novamente mais tarde.",
+          isInseted?.error ||
+            "Houve um erro ao registrar a fatura. Por favor, tente novamente mais tarde.",
           {
             message_thread_id: messageThreadId,
           },
@@ -434,34 +484,62 @@ class AgendaPayment {
 
       case "amount":
         this.selectedAmount = userText;
-        this.stage = "dividers";
-        this.bot.sendMessage(
-          chatId,
-          "Por favor, quantas pessoas vão pagar essa fatura? \n\nEg: Se foi para 3 pessoas, digite 3",
-          {
-            message_thread_id: messageThreadId,
+        void this.showMemberPicker(chatId, messageThreadId, userId).catch(
+          async (error) => {
+            console.error(error);
+            await this.bot.sendMessage(
+              chatId,
+              "Não consegui carregar os membros agora. Tente novamente em alguns instantes.",
+              { message_thread_id: messageThreadId },
+            );
           },
         );
         return false;
-
-      case "dividers":
-        // this.selectedDescription = userText;
-        const dividers = this.dividers(this.selectedAmount, userText);
-        if (!dividers) {
-          this.stage = "amount";
-          this.bot.sendMessage(
-            chatId,
-            "Aconteceu um erro ao registrar a fatura, só aceitamos valores numéricos. \n\nPor favor, qual é o valor da fatura?",
-            {
-              message_thread_id: messageThreadId,
-            },
-          );
-          return false;
-        }
-        this.stage = "finalSummary";
-        this.sendFinalSummary(chatId, messageThreadId, userId, msg.from);
-        return true;
     }
+  }
+
+  async showMemberPicker(chatId, messageThreadId, userId) {
+    if (!this.selectedChatId) {
+      this.stage = "selectInstallation";
+      await this.bot.sendMessage(
+        chatId,
+        "Escolha primeiro o grupo/canal onde essa fatura será anexada.",
+        { message_thread_id: messageThreadId },
+      );
+      return false;
+    }
+
+    const members = await getBotInstallationUsers(this.selectedChatId);
+    if (!members || members.length === 0) {
+      await this.bot.sendMessage(
+        chatId,
+        "Não encontrei membros registrados neste grupo/canal. Envie uma mensagem no grupo primeiro e tente novamente.",
+        { message_thread_id: messageThreadId },
+      );
+      return false;
+    }
+
+    this.availableMembers = members;
+    const creatorBelongsToChat = members.some((member) =>
+      Number(member.telegramId || member.telegramUserId) === Number(userId)
+    );
+    this.selectedMemberTelegramIds = new Set(
+      creatorBelongsToChat ? [Number(userId)] : [],
+    );
+    this.stage = "selectMembers";
+
+    await this.bot.sendMessage(
+      chatId,
+      "Selecione quem vai pagar essa fatura:",
+      {
+        message_thread_id: messageThreadId,
+        reply_markup: {
+          inline_keyboard: this.generateMembersKeyboard(),
+        },
+      },
+    );
+
+    return true;
   }
 
   /**
@@ -504,6 +582,80 @@ class AgendaPayment {
     this.chat_id = chatId;
     this.message_id = msg.message_id;
     this.message_thread_id = msg.message_thread_id;
+
+    if (data.startsWith("agenda_member_")) {
+      const telegramId = Number(data.replace("agenda_member_", ""));
+      const isAvailable = this.availableMembers.some((member) =>
+        Number(member.telegramId || member.telegramUserId) === telegramId
+      );
+
+      if (!isAvailable) {
+        await this.bot.answerCallbackQuery(callbackQuery.id, {
+          text: "Esse membro não pertence ao grupo/canal selecionado.",
+          show_alert: true,
+        });
+        return false;
+      }
+
+      const selected = new Set(this.selectedMemberTelegramIds);
+      if (selected.has(telegramId)) {
+        selected.delete(telegramId);
+      } else {
+        selected.add(telegramId);
+      }
+      this.selectedMemberTelegramIds = selected;
+
+      await this.bot.answerCallbackQuery(callbackQuery.id);
+      await this.bot.editMessageReplyMarkup(
+        {
+          inline_keyboard: this.generateMembersKeyboard(),
+        },
+        {
+          chat_id: this.chat_id,
+          message_id: this.message_id,
+        },
+      );
+      return false;
+    }
+
+    if (data === "agenda_members_done") {
+      const responsibleCount = this.selectedMemberTelegramIds.size;
+      if (responsibleCount === 0) {
+        await this.bot.answerCallbackQuery(callbackQuery.id, {
+          text: "Selecione pelo menos uma pessoa.",
+          show_alert: true,
+        });
+        return false;
+      }
+
+      if (!this.dividers(this.selectedAmount, responsibleCount)) {
+        this.stage = "amount";
+        await this.bot.answerCallbackQuery(callbackQuery.id, {
+          text: "Valor inválido. Digite o valor da fatura novamente.",
+          show_alert: true,
+        });
+        await this.bot.sendMessage(
+          chatId,
+          "Por favor, qual é o valor da fatura?",
+          { message_thread_id: this.message_thread_id },
+        );
+        return false;
+      }
+
+      this.stage = "finalSummary";
+      await this.bot.answerCallbackQuery(callbackQuery.id);
+      await this.bot.editMessageText("Registrando fatura...", {
+        chat_id: this.chat_id,
+        message_id: this.message_id,
+      });
+      await this.sendFinalSummary(
+        chatId,
+        this.message_thread_id,
+        userId,
+        callbackQuery.from,
+      );
+      return true;
+    }
 
     if (data.startsWith("agenda_chat_")) {
       const telegramChatId = Number(data.replace("agenda_chat_", ""));

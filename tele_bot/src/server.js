@@ -252,7 +252,12 @@ bot.on("callback_query", async (callbackQuery) => {
   const userId = callbackQuery.from.id;
 
   if (agendaUsersState[userId]) {
-    agendaUsersState[userId].handleKeyboard(callbackQuery);
+    const isCompleted = await agendaUsersState[userId].handleKeyboard(
+      callbackQuery,
+    );
+    if (isCompleted) {
+      delete agendaUsersState[userId];
+    }
   }
   if (paidState[userId]) {
     paidState[userId].handlePaid(callbackQuery);

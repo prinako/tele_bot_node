@@ -180,16 +180,21 @@ async function resolveResponsibleUsers(db, data, creator) {
       data.chatId,
       uniqueUsers,
     );
-    return installationUsers.length > 0
-      ? installationUsers
-      : creator ? [creator] : [];
-  }
 
-  if (data.chatId) {
-    const installationUsers = await getUsersByBotInstallationChatId(
-      db,
-      data.chatId,
+    const allowedIds = new Set(
+      installationUsers.map((user) => Number(user.telegram_id)),
     );
+    const hasInvalidUser = uniqueUsers.some((user) =>
+      !allowedIds.has(Number(user.telegram_id))
+    );
+    if (hasInvalidUser) {
+      const error = new Error(
+        "Selected responsible users must belong to the selected group/channel",
+      );
+      error.status = 403;
+      throw error;
+    }
+
     return installationUsers.length > 0
       ? installationUsers
       : creator ? [creator] : [];
@@ -213,26 +218,6 @@ async function userBelongsToBotInstallationChat(db, telegramUserId, chatId) {
   );
 
   return result.rowCount > 0;
-}
-
-async function getUsersByBotInstallationChatId(db, telegramChatId) {
-  const result = await db.query(
-    `SELECT u.*
-       FROM bot_installation_users biu
-       JOIN bot_installations bi ON bi.id = biu.bot_installation_id
-       JOIN users u ON u.id = biu.user_id
-      WHERE bi.telegram_chat_id = $1
-        AND bi.chat_type IN ('group', 'supergroup', 'channel')
-        AND bi.bot_status = 'active'
-      ORDER BY
-        u.display_name ASC NULLS LAST,
-        u.first_name ASC NULLS LAST,
-        u.username ASC NULLS LAST,
-        u.telegram_id ASC`,
-    [telegramChatId],
-  );
-
-  return result.rows;
 }
 
 async function filterUsersByBotInstallationChatId(db, telegramChatId, users) {
@@ -614,8 +599,12 @@ async function updateAgendaPayment(id, data, senderId = null) {
         db,
         data.senderId || data.telegramId || senderId,
       );
-      const members = await resolveResponsibleUsers(db, data, creator);
       const agenda = await getAgendaRow(db, id);
+      const members = await resolveResponsibleUsers(
+        db,
+        { ...data, chatId: data.chatId ?? agenda?.chat_id },
+        creator,
+      );
       const amountShare = members.length > 0
         ? parseMoney(agenda.total_amount) / members.length
         : null;

@@ -114,8 +114,8 @@ Agenda creation:
 - The user must select one group/channel to attach the bill to.
 - If the user belongs to no registered group/channel, agenda creation is
   blocked.
-- New agenda payments default responsible members to users seen in the selected
-  group/channel.
+- After the amount, the bot lists users seen in the selected group/channel.
+  The selected users define who is responsible and how the bill is split.
 
 `bot_installations` stores Telegram groups, supergroups, and channels where the
 bot is present. Private chats are not stored as bot installations; private users
