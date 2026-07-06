@@ -42,6 +42,22 @@ services:
     networks:
       - telebot
 
+  admin_panel:
+    build:
+      context: ./admin_panel
+      dockerfile: Dockerfile
+      args:
+        VITE_BACKEND_URL: ${VITE_BACKEND_URL:-http://localhost:3000}
+    container_name: tele-bot-admin-panel
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "${ADMIN_PANEL_PORT:-3001}:80"
+    networks:
+      - telebot
+
   postgres:
     image: postgres:17-alpine
     container_name: tele-bot-postgres
