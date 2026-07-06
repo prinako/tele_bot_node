@@ -1,4 +1,11 @@
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
+const BACKEND_URL =
+  window.APP_CONFIG?.BACKEND_URL ||
+  import.meta.env.VITE_BACKEND_URL ||
+  "";
+
+if (!BACKEND_URL) {
+  throw new Error("BACKEND_URL is not set");
+}
 
 async function request(path, options = {}) {
   const response = await fetch(`${BACKEND_URL}${path}`, {
