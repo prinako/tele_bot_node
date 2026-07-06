@@ -151,18 +151,36 @@ ADMIN_PANEL_PORT=3001
 VITE_BACKEND_URL=http://localhost:3000
 ```
 
-## Docker
+## Docker Production
 
 ```bash
-docker compose build
-docker compose up -d postgres backend
-curl http://localhost:3000/health
-docker compose up -d admin_panel
-docker compose up -d tele_bot
-docker compose logs -f backend admin_panel tele_bot
+docker compose down --remove-orphans
+docker compose build --no-cache admin_panel
+docker compose up -d
+docker compose logs -f admin_panel
 ```
 
 The PostgreSQL data volume is mounted at `/Kojo/Docker/tele_bot_node/postgres`.
+
+The production admin panel is built by `admin_panel/Dockerfile`. Vite runs only
+during the Node build stage, then nginx serves the generated `dist` files on
+container port `80`.
+
+## Docker Development
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+```
+
+The development override bind mounts the app source and keeps each
+`node_modules` directory in a named Docker volume. The admin panel runs Vite on
+container port `5173` only in this mode.
+
+If `tele-bot-admin-panel` fails with `vite: not found`, the container is usually
+running the development command in the wrong compose mode, or a bind mount has
+hidden `node_modules`. Use the production command above for nginx production, or
+use the development override command so dependencies are installed inside the
+container volume.
 
 ## Admin Panel
 

@@ -1,9 +1,6 @@
 services:
   backend:
     image: ghcr.io/prinako/tele_bot_node/backend:dev
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
     container_name: tele-bot-backend
     restart: unless-stopped
     depends_on:
@@ -23,9 +20,6 @@ services:
 
   tele_bot:
     image: ghcr.io/prinako/tele_bot_node/tele_bot:dev
-    build:
-      context: ./tele_bot
-      dockerfile: Dockerfile
     container_name: tele-bot
     restart: unless-stopped
     depends_on:
@@ -44,11 +38,6 @@ services:
 
   admin_panel:
     image: ghcr.io/prinako/tele_bot_node/admin_panel:dev
-    build:
-      context: ./admin_panel
-      dockerfile: Dockerfile
-      args:
-        VITE_BACKEND_URL: ${VITE_BACKEND_URL:-http://localhost:3000}
     container_name: tele-bot-admin-panel
     restart: unless-stopped
     depends_on:
