@@ -44,6 +44,7 @@ tele_bot/
 - `POST /api/users/upsert`
 - `GET /api/users/allowed`
 - `GET /api/users/:telegramId`
+- `GET /api/banks`
 - `POST /api/pix`
 - `GET /api/pix?senderId=<telegramId>&bank=<bank>`
 - `PATCH /api/pix/:id`
@@ -71,6 +72,9 @@ design:
 Banks are stored in the backend PostgreSQL `banks` table and exposed through
 `GET /api/banks`. The Telegram bot uses this endpoint to build the bank
 keyboard.
+
+PIX keys reference banks through `pix_keys.bank_id`. API responses still include
+`bank` as the bank name for Telegram callback compatibility.
 
 New agenda payments use explicit responsible users when provided. Otherwise,
 backend selects all users with `is_allowed = TRUE`. If none exist yet, it falls
