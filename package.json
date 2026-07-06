@@ -9,7 +9,9 @@
     "down": "docker compose down",
     "logs": "docker compose logs -f backend tele_bot",
     "dev:backend": "cd backend && npm run dev",
-    "dev:bot": "cd tele_bot && npm run dev"
+    "dev:bot": "cd tele_bot && npm run dev",
+    "dev:admin": "cd admin_panel && npm run dev",
+    "build:admin": "cd admin_panel && npm run build"
   },
   "keywords": [
     "telegram",
