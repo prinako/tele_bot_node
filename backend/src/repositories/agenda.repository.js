@@ -413,6 +413,19 @@ async function getAllAgendaPayment(next) {
   }
 }
 
+async function getAllAgendaPaymentsForAdmin() {
+  const result = await query(
+    `SELECT id
+       FROM agenda_payments
+      ORDER BY created_at DESC`,
+  );
+
+  const rows = await Promise.all(
+    result.rows.map((row) => getAgendaPaymentById(row.id)),
+  );
+  return rows.filter(Boolean);
+}
+
 async function getAgendaPaymentById(id) {
   try {
     return mapAgenda(await getAgendaRow({ query }, id)) || false;
@@ -568,6 +581,7 @@ export {
   getAgendaPaymentById,
   getAllAgendaPayment,
   getAllAgendaPaymentBySender,
+  getAllAgendaPaymentsForAdmin,
   insetAgendaPayment,
   updateAgendaPayment,
 };
