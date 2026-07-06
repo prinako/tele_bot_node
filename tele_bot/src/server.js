@@ -17,7 +17,11 @@ import {
 import { registerTelegramUserAndMembership } from "./utilities/registerTelegramUserAndMembership.js";
 import { handleUserMessage } from "./handlers/handleUserMessage.js";
 
-// Create a new instance of the bot
+/**
+ * Creates a new instance of the bot.
+ *
+ * @returns {TelegramBot} The bot instance.
+ */
 const bot = createBot();
 
 new SchedulesEveryday(bot);
