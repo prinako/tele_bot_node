@@ -67,6 +67,11 @@ admin_panel/
 - `GET /api/admin/stats`
 - `GET /api/admin/pix`
 - `GET /api/admin/agenda`
+- `POST /api/bot-installations/upsert`
+- `GET /api/bot-installations`
+- `GET /api/bot-installations/:telegramChatId`
+- `POST /api/bot-installations/topics/upsert`
+- `GET /api/bot-installations/:telegramChatId/topics`
 - `POST /api/agenda`
 - `GET /api/agenda`
 - `GET /api/agenda/user/:telegramId`
@@ -87,6 +92,8 @@ design:
 - `pix_keys`
 - `agenda_payments`
 - `agenda_payment_members`
+- `bot_installations`
+- `bot_installation_topics`
 
 Banks are stored in the backend PostgreSQL `banks` table and exposed through
 `GET /api/banks`. The Telegram bot uses this endpoint to build the bank
@@ -98,6 +105,17 @@ PIX keys reference banks through `pix_keys.bank_id`. API responses still include
 New agenda payments use explicit responsible users when provided. Otherwise,
 backend selects all users with `is_allowed = TRUE`. If none exist yet, it falls
 back to the creator only.
+
+`bot_installations` stores Telegram groups, supergroups, and channels where the
+bot is present. Private user chats stay in `users` and are not stored as bot
+installations. `bot_installation_topics` stores forum topics/message threads
+inside those groups, supergroups, and channels.
+
+For existing PostgreSQL volumes, apply the bot installation migration:
+
+```bash
+docker exec -i tele-bot-postgres psql -U telebot -d telebot < backend/src/db/migrations/003_bot_installations_topics.sql
+```
 
 ## Environment
 
@@ -152,10 +170,16 @@ Pages:
 - PIX Keys
 - Agenda
 - Agenda Details
+- Groups & Channels
+- Group or Channel Details
 
 For Docker, `VITE_BACKEND_URL` is a browser-side URL baked into the Vite build.
 The default is `http://localhost:3000`, so the backend port must be exposed to
 the browser.
+
+The admin panel includes a Groups & Channels page showing Telegram groups,
+supergroups, and channels where the bot is active, plus topics registered under
+each chat.
 
 Do not expose the admin panel publicly until authentication is added. Use it
 only on LAN/VPN or behind a protected reverse proxy.
