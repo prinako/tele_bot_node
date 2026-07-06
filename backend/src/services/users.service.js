@@ -1,6 +1,8 @@
 import {
   getAllowedTelegramUsers,
+  getAllUsers,
   getUserByTelegramId,
+  updateUserByTelegramId,
   upsertTelegramUser,
 } from "../repositories/users.repository.js";
 
@@ -12,8 +14,16 @@ async function getAllowedUsers() {
   return getAllowedTelegramUsers();
 }
 
+async function listUsers() {
+  return getAllUsers();
+}
+
 async function getUser(telegramId) {
   return getUserByTelegramId(telegramId);
 }
 
-export { getAllowedUsers, getUser, upsertUser };
+async function updateUser(telegramId, data) {
+  return updateUserByTelegramId(telegramId, data);
+}
+
+export { getAllowedUsers, getUser, listUsers, updateUser, upsertUser };
