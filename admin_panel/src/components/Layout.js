@@ -4,7 +4,13 @@ const navItems = [
   { href: "#/banks", label: "Banks" },
   { href: "#/pix", label: "PIX Keys" },
   { href: "#/agenda", label: "Agenda" },
+  { href: "#/bot-installations", label: "Groups & Channels" },
 ];
+
+function isActive(route, href) {
+  const itemRoute = href.slice(1);
+  return itemRoute === "/" ? route === "/" : route.startsWith(itemRoute);
+}
 
 export default function Layout({ route, children }) {
   return (
@@ -21,7 +27,7 @@ export default function Layout({ route, children }) {
           {navItems.map((item) => (
             <a
               key={item.href}
-              className={route === item.href.slice(1) ? "active" : ""}
+              className={isActive(route, item.href) ? "active" : ""}
               href={item.href}
             >
               {item.label}
