@@ -1,0 +1,117 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tele-bot-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgres://telebot:${POSTGRES_PASSWORD:-telebot}@postgres:5432/telebot
+      ALLOWED_USERS: ${ALLOWED_USERS}
+      ADMIN_USERS: ${ADMIN_USERS}
+      LOG: ${LOG:-false}
+    command: npm run dev
+    volumes:
+      - ./backend:/app
+      - backend_node_modules:/app/node_modules
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+    networks:
+      - telebot
+
+  tele_bot:
+    build:
+      context: ./tele_bot
+      dockerfile: Dockerfile
+    container_name: tele-bot
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    environment:
+      NODE_ENV: development
+      BOT_TOKEN: ${BOT_TOKEN}
+      BACKEND_URL: http://backend:3000
+      BILLS_THREAD_ID: ${BILLS_THREAD_ID}
+      PAID_THREAD_ID: ${PAID_THREAD_ID}
+      CHAT_ID: ${CHAT_ID}
+      LOG: ${LOG:-false}
+    command: npm run dev
+    volumes:
+      - ./tele_bot:/app
+      - tele_bot_node_modules:/app/node_modules
+    networks:
+      - telebot
+
+  admin_panel:
+    build:
+      context: ./admin_panel
+      dockerfile: Dockerfile.dev
+      args:
+        VITE_BACKEND_URL: ${VITE_BACKEND_URL:-http://localhost:3000}
+    container_name: tele-bot-admin-panel
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    environment:
+      VITE_BACKEND_URL: ${VITE_BACKEND_URL:-http://localhost:3000}
+    command: npm run dev
+    volumes:
+      - ./admin_panel:/app
+      - admin_panel_node_modules:/app/node_modules
+    ports:
+      - "${ADMIN_PANEL_PORT:-3001}:5173"
+    networks:
+      - telebot
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: tele-bot-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: telebot
+      POSTGRES_USER: telebot
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-telebot}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/src/db/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U telebot -d telebot
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - telebot
+
+  adminer:
+    image: adminer:latest
+    container_name: tele-bot-adminer
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    ports:
+      - "${ADMINER_PORT:-8080}:8080"
+    networks:
+      - telebot
+
+networks:
+  telebot:
+    name: telebot
+
+volumes:
+  backend_node_modules:
+  tele_bot_node_modules:
+  admin_panel_node_modules:
+  postgres_data:
