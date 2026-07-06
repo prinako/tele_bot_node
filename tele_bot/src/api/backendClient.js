@@ -31,6 +31,20 @@ async function upsertUser(user) {
   });
 }
 
+async function upsertBotInstallation(data) {
+  return request("/api/bot-installations/upsert", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+async function upsertBotInstallationTopic(data) {
+  return request("/api/bot-installations/topics/upsert", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
 async function createAgendaPayment(data) {
   return request("/api/agenda", {
     method: "POST",
@@ -170,5 +184,7 @@ export {
   registerPix,
   updateAgendaPayment,
   updatePixWithCallback as updatePix,
+  upsertBotInstallation,
+  upsertBotInstallationTopic,
   upsertUser,
 };
