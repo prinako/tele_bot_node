@@ -50,6 +50,15 @@ function mapUser(row) {
   };
 }
 
+const userColumnMap = {
+  username: "username",
+  firstName: "first_name",
+  lastName: "last_name",
+  displayName: "display_name",
+  isAdmin: "is_admin",
+  isAllowed: "is_allowed",
+};
+
 function allowedTelegramIds() {
   return (process.env.ALLOWED_USERS || "")
     .split(",")
@@ -148,14 +157,11 @@ async function updateUserByTelegramId(telegramId, data = {}) {
   const fields = [];
   const values = [];
 
-  if (Object.prototype.hasOwnProperty.call(data, "isAllowed")) {
-    values.push(data.isAllowed);
-    fields.push(`is_allowed = $${values.length}`);
-  }
-
-  if (Object.prototype.hasOwnProperty.call(data, "isAdmin")) {
-    values.push(data.isAdmin);
-    fields.push(`is_admin = $${values.length}`);
+  for (const [field, column] of Object.entries(userColumnMap)) {
+    if (Object.prototype.hasOwnProperty.call(data, field)) {
+      values.push(data[field]);
+      fields.push(`${column} = $${values.length}`);
+    }
   }
 
   if (fields.length === 0) {
