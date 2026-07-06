@@ -3,7 +3,6 @@ import { upsertUser } from "./users.repository.js";
 
 const pixColumnMap = {
   pix: "pix",
-  bank: "bank",
 };
 
 function toNumberOrNull(value) {
@@ -22,7 +21,8 @@ function mapPix(row) {
     pix: row.pix,
     senderId: toNumberOrNull(row.telegram_id),
     telegramId: toNumberOrNull(row.telegram_id),
-    bank: row.bank,
+    bankId: row.bank_id,
+    bank: row.bank_name || row.bank,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -49,30 +49,72 @@ function buildUpdate(data, columnMap) {
   };
 }
 
+async function resolveBank(db, data) {
+  if (data.bankId) {
+    const result = await db.query(
+      `SELECT *
+         FROM banks
+        WHERE id = $1`,
+      [data.bankId],
+    );
+
+    return result.rows[0] || null;
+  }
+
+  if (data.bank) {
+    const result = await db.query(
+      `SELECT *
+         FROM banks
+        WHERE lower(name) = lower($1)`,
+      [data.bank],
+    );
+
+    return result.rows[0] || null;
+  }
+
+  return null;
+}
+
 async function insetPix(data, next) {
   const db = await getClient();
 
   try {
     await db.query("BEGIN");
     const user = await upsertUser(db, data);
+    const bank = await resolveBank(db, data);
+    if (!bank) {
+      await db.query("ROLLBACK");
+      return next({
+        error: true,
+        returnData: {
+          message: "Bank not found",
+          code: "BANK_NOT_FOUND",
+        },
+      });
+    }
+
     const result = await db.query(
       `INSERT INTO pix_keys (
                 user_id,
-                pix,
-                bank
+                bank_id,
+                pix
             ) VALUES ($1, $2, $3)
             RETURNING *`,
       [
         user.id,
+        bank.id,
         data.pix,
-        data.bank,
       ],
     );
     await db.query("COMMIT");
 
     return next({
       error: false,
-      returnData: mapPix({ ...result.rows[0], telegram_id: user.telegram_id }),
+      returnData: mapPix({
+        ...result.rows[0],
+        telegram_id: user.telegram_id,
+        bank_name: bank.name,
+      }),
     });
   } catch (error) {
     await db.query("ROLLBACK");
@@ -88,11 +130,13 @@ async function getUserPixBySenderBank(senderId, bank) {
     const result = await query(
       `SELECT
                 pk.*,
-                u.telegram_id
+                u.telegram_id,
+                b.name AS bank_name
              FROM pix_keys pk
              JOIN users u ON u.id = pk.user_id
+             JOIN banks b ON b.id = pk.bank_id
              WHERE u.telegram_id = $1
-               AND pk.bank = $2
+               AND lower(b.name) = lower($2)
              ORDER BY pk.created_at ASC`,
       [senderId, bank],
     );
@@ -110,6 +154,17 @@ async function updatePix(id, data, next) {
   try {
     await db.query("BEGIN");
     const update = buildUpdate(data, pixColumnMap);
+    const bank = data.bankId || data.bank ? await resolveBank(db, data) : null;
+    if ((data.bankId || data.bank) && !bank) {
+      await db.query("ROLLBACK");
+      return next({
+        error: true,
+        returnData: {
+          message: "Bank not found",
+          code: "BANK_NOT_FOUND",
+        },
+      });
+    }
 
     if (data.senderId || data.telegramId || data.user) {
       const user = await upsertUser(db, data);
@@ -120,6 +175,17 @@ async function updatePix(id, data, next) {
                     updated_at = NOW()
                  WHERE id = $1`,
         [id, user.id],
+      );
+    }
+
+    if (bank) {
+      await db.query(
+        `UPDATE pix_keys
+                 SET
+                    bank_id = $2,
+                    updated_at = NOW()
+                 WHERE id = $1`,
+        [id, bank.id],
       );
     }
 
@@ -135,9 +201,11 @@ async function updatePix(id, data, next) {
     const result = await db.query(
       `SELECT
                 pk.*,
-                u.telegram_id
+                u.telegram_id,
+                b.name AS bank_name
              FROM pix_keys pk
              JOIN users u ON u.id = pk.user_id
+             JOIN banks b ON b.id = pk.bank_id
              WHERE pk.id = $1`,
       [id],
     );
