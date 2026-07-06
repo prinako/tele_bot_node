@@ -53,6 +53,7 @@ services:
     volumes:
       - /Kojo/Docker/tele_bot_node/postgres:/var/lib/postgresql/data
       - ./backend/src/db/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+      - ./backend/src/db/migrations/002_banks_and_pix_bank_id.sql:/docker-entrypoint-initdb.d/002-banks-and-pix-bank-id.sql:ro
     healthcheck:
       test:
         - CMD-SHELL
