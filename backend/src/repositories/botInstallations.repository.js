@@ -229,7 +229,7 @@ async function updateBotInstallationTopicSettings(telegramChatId, data = {}) {
 
 async function upsertBotInstallationTopic(data = {}) {
   const { telegramChatId, messageThreadId } = data;
-  const name = data.name || `Topic ${messageThreadId}`;
+  const name = data.name || null;
 
   const result = await query(
     `WITH installation AS (
@@ -242,11 +242,11 @@ async function upsertBotInstallationTopic(data = {}) {
           message_thread_id,
           name
         )
-        SELECT id, $2, $3
+        SELECT id, $2, COALESCE($3, $4)
           FROM installation
         ON CONFLICT (bot_installation_id, message_thread_id)
         DO UPDATE SET
-          name = COALESCE(EXCLUDED.name, bot_installation_topics.name),
+          name = COALESCE($3, bot_installation_topics.name),
           is_active = TRUE,
           last_seen_at = NOW(),
           updated_at = NOW()
@@ -255,7 +255,7 @@ async function upsertBotInstallationTopic(data = {}) {
       SELECT upserted.*, installation.telegram_chat_id
         FROM upserted
         JOIN installation ON installation.id = upserted.bot_installation_id`,
-    [telegramChatId, messageThreadId, name],
+    [telegramChatId, messageThreadId, name, `Topic ${messageThreadId}`],
   );
 
   return mapTopic(result.rows[0]) || null;

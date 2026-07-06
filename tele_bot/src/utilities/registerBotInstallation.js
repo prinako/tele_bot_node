@@ -26,12 +26,27 @@ async function registerBotInstallation(msg) {
     });
 
     if (msg.message_thread_id) {
+      const topicName =
+        msg.forum_topic_created?.name ||
+        msg.forum_topic_edited?.name ||
+        msg.reply_to_message?.forum_topic_created?.name ||
+        msg.reply_to_message?.forum_topic_edited?.name ||
+        null;
+
+      if (process.env.LOG === "true") {
+        console.log("Registering topic:", {
+          telegramChatId: chat.id,
+          messageThreadId: msg.message_thread_id,
+          topicName,
+          forumTopicCreated: msg.forum_topic_created,
+          forumTopicEdited: msg.forum_topic_edited,
+        });
+      }
+
       await upsertBotInstallationTopic({
         telegramChatId: chat.id,
         messageThreadId: msg.message_thread_id,
-        name: msg.forum_topic_created?.name ||
-          msg.forum_topic_edited?.name ||
-          `Topic ${msg.message_thread_id}`,
+        name: topicName,
       });
     }
 
