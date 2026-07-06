@@ -183,6 +183,32 @@ async function resolveResponsibleUsers(db, data, creator) {
   return [creator];
 }
 
+async function resolveBank(db, data) {
+  if (data.bankId) {
+    const result = await db.query(
+      `SELECT *
+         FROM banks
+        WHERE id = $1`,
+      [data.bankId],
+    );
+
+    return result.rows[0] || null;
+  }
+
+  if (data.bank) {
+    const result = await db.query(
+      `SELECT *
+         FROM banks
+        WHERE lower(name) = lower($1)`,
+      [data.bank],
+    );
+
+    return result.rows[0] || null;
+  }
+
+  return null;
+}
+
 async function getAgendaRow(db, id) {
   const result = await db.query(
     `SELECT
@@ -234,14 +260,20 @@ async function insetAgendaPayment(data, next) {
     await db.query("BEGIN");
 
     const creator = await upsertUser(db, data);
+    const bank = await resolveBank(db, data);
+    if (!bank) {
+      await db.query("ROLLBACK");
+      return next(false);
+    }
+
     const pixKey = await db.query(
       `SELECT pk.id
              FROM pix_keys pk
              WHERE pk.user_id = $1
                AND pk.pix = $2
-               AND pk.bank = $3
+               AND pk.bank_id = $3
              LIMIT 1`,
-      [creator.id, data.pix, data.bank],
+      [creator.id, data.pix, bank.id],
     );
 
     const agendaResult = await db.query(
@@ -274,7 +306,7 @@ async function insetAgendaPayment(data, next) {
         data.description,
         pixKey.rows[0]?.id ?? null,
         data.pix,
-        data.bank,
+        bank.name,
         data.isPaid ?? false,
       ],
     );
