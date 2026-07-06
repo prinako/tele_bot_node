@@ -1,7 +1,7 @@
 import {
   getBotInstallationByTelegramChatId,
   getBotInstallations,
-  getBotInstallationTopics,
+  getBotInstallationTopicsByTelegramChatId,
   isInstallationChatType,
   upsertBotInstallation,
   upsertBotInstallationTopic,
@@ -58,7 +58,7 @@ async function listTopics(telegramChatId) {
     return null;
   }
 
-  return getBotInstallationTopics(telegramChatId);
+  return getBotInstallationTopicsByTelegramChatId(telegramChatId);
 }
 
 export {
