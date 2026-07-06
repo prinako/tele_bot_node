@@ -1,6 +1,8 @@
-const BACKEND_URL =
-  import.meta.env.VITE_BACKEND_URL ||
-  "api-telebot.home.prinako.onlin";
+// const BACKEND_URL =
+//   import.meta.env.VITE_BACKEND_URL ||
+//   "https://api-telebot.home.prinako.online";
+
+const BACKEND_URL = "https://api-telebot.home.prinako.online";
 
 
 async function request(path, options = {}) {
