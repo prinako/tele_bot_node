@@ -33,6 +33,14 @@ async function list(req, res, next) {
 async function patch(req, res, next) {
   try {
     const result = await pixService.updatePixKey(req.params.id, req.body);
+    if (result?.error) {
+      return res.status(400).json({
+        error: "PIX could not be updated",
+        details: result.returnData?.message,
+        code: result.returnData?.code,
+      });
+    }
+
     if (!result) {
       return res.status(404).json({ error: "PIX key not found" });
     }
