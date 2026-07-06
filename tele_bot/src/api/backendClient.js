@@ -45,6 +45,14 @@ async function upsertBotInstallationTopic(data) {
   });
 }
 
+async function getBotInstallations() {
+  return request("/api/bot-installations");
+}
+
+async function getBotInstallationTopics(telegramChatId) {
+  return request(`/api/bot-installations/${telegramChatId}/topics`);
+}
+
 async function createAgendaPayment(data) {
   return request("/api/agenda", {
     method: "POST",
@@ -176,6 +184,8 @@ export {
   getAllAgendaPaymentBySender,
   getAllAgendaPayments,
   getBanks,
+  getBotInstallations,
+  getBotInstallationTopics,
   getUserPixBySenderBank,
   insetAgendaPayment,
   insetPix,
