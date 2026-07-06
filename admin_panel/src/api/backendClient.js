@@ -1,10 +1,7 @@
 const BACKEND_URL =
   import.meta.env.VITE_BACKEND_URL ||
-  "";
+  "http://backend:3000";
 
-if (!BACKEND_URL) {
-  throw new Error("BACKEND_URL is not set");
-}
 
 async function request(path, options = {}) {
   const response = await fetch(`${BACKEND_URL}${path}`, {
