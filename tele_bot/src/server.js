@@ -15,6 +15,7 @@ import {
   pixState,
 } from "./state/memoryState.js";
 import { registerTelegramUserAndMembership } from "./utilities/registerTelegramUserAndMembership.js";
+import { handleUserMessage } from "./handlers/handleUserMessage.js";
 
 // Create a new instance of the bot
 const bot = createBot();
@@ -226,76 +227,9 @@ bot.onText(/\/ia/, (msg) => {
 });
 
 // Handle user responses
-bot.on("message", async (msg) => {
+bot.on("message", (msg) => {
   trackTelegramUserAndMembership(msg);
-
-  const text = msg.text;
-
-  if (process.env.LOG) console.debug(msg);
-
-  if (!text) {
-    return;
-  }
-
-  if (text === "/cancel") {
-    return;
-  }
-
-  if (!msg.from?.id) {
-    return;
-  }
-
-  try {
-    const greetings = text.toLowerCase();
-    if (
-      greetings === "oi" || greetings === "ola" || greetings === "olá" ||
-      greetings === "hello" || greetings === "hi" || greetings === "hey"
-    ) {
-      bot.sendMessage(
-        msg.chat.id,
-        text + " " + msg.from.first_name +
-          ", sou a inteligência artificial do bot de faturas.\n\n Vou te ajudar a registrar o pagamento de faturas.\n\nPara saber mais sobre mim, digite /agenda",
-        {
-          message_thread_id: msg.message_thread_id,
-          chat_id: msg.chat.id,
-          message_id: msg.message_id,
-        },
-      );
-    }
-  } catch (error) {
-    if (process.env.LOG) {
-      console.error(error);
-    }
-  }
-  // console.log(msg);
-
-  // Get the user ID of the message
-  const userId = msg.from.id;
-
-  if (
-    agendaUsersState[userId] &&
-    (agendaUsersState[userId].stage === "title" ||
-      agendaUsersState[userId].stage === "newPix")
-  ) {
-    agendaUsersState[userId].stageTracker = true;
-  }
-
-  // Check if the agendaUsersState instance exists for the user
-  if (agendaUsersState[userId] && agendaUsersState[userId].stageTracker) {
-    // Handle the user's response
-    const isCompleted = agendaUsersState[userId].handleResponse(msg);
-    // If the process is complete, clean up the state and user class
-    if (isCompleted) {
-      delete agendaUsersState[userId];
-    }
-  }
-
-  if (pixState[userId] && pixState[userId].isStagePixChave) {
-    const isCompleted = pixState[userId].handleResponse(msg);
-    if (isCompleted) {
-      delete pixState[userId];
-    }
-  }
+  handleUserMessage(bot, msg);
 });
 
 // Handle callback queries
