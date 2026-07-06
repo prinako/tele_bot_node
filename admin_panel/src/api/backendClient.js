@@ -91,6 +91,18 @@ export function getAgendaMembers(id) {
   return request(`/api/agenda/${id}/members`);
 }
 
+export function getBotInstallations() {
+  return request("/api/bot-installations");
+}
+
+export function getBotInstallation(telegramChatId) {
+  return request(`/api/bot-installations/${telegramChatId}`);
+}
+
+export function getBotInstallationTopics(telegramChatId) {
+  return request(`/api/bot-installations/${telegramChatId}/topics`);
+}
+
 export function markAgendaMemberPaid(id, telegramId) {
   return request(`/api/agenda/${id}/members/${telegramId}/paid`, {
     method: "PATCH",
