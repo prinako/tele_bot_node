@@ -14,13 +14,20 @@ import {
   paidState,
   pixState,
 } from "./state/memoryState.js";
+import { registerBotInstallation } from "./utilities/registerBotInstallation.js";
 
 // Create a new instance of the bot
 const bot = createBot();
 
 new SchedulesEveryday(bot);
 
+function trackBotInstallation(msg) {
+  void registerBotInstallation(msg);
+}
+
 bot.onText(/\/cancel/, (msg) => {
+  trackBotInstallation(msg);
+
   const userId = msg.from.id;
 
   if (!allowedUsers(userId)) {
@@ -44,6 +51,8 @@ bot.onText(/\/cancel/, (msg) => {
 
 // Command /start to initiate the month selection
 bot.onText(/\/start/, (msg) => {
+  trackBotInstallation(msg);
+
   const chatId = msg.chat.id;
   bot.sendMessage(chatId, "Please use /agenda to start the process.", {
     reply_markup: {},
@@ -52,6 +61,8 @@ bot.onText(/\/start/, (msg) => {
 
 // Command /agenda to initiate the month selection
 bot.onText(/\/agenda/, (msg) => {
+  trackBotInstallation(msg);
+
   const userId = msg.from.id;
   if (agendaUsersState[userId]) {
     agendaUsersState[userId] = {};
@@ -75,6 +86,8 @@ bot.onText(/\/agenda/, (msg) => {
 });
 
 bot.onText(/\/help/, (msg) => {
+  trackBotInstallation(msg);
+
   // const chatId = msg.chat.id;
   if (!allowedUsers(msg.from.id)) {
     bot.sendMessage(
@@ -101,6 +114,8 @@ bot.onText(/\/help/, (msg) => {
 });
 
 bot.onText(/\/whopaid/, (msg) => {
+  trackBotInstallation(msg);
+
   const userId = msg.from.id;
   if (!allowedUsers(userId)) {
     userHasNoPermission(bot, msg);
@@ -115,6 +130,8 @@ bot.onText(/\/whopaid/, (msg) => {
 });
 
 bot.onText(/\/pagou/, (msg) => {
+  trackBotInstallation(msg);
+
   const userId = msg.from.id;
   if (!allowedUsers(userId)) {
     userHasNoPermission(bot, msg);
@@ -125,6 +142,8 @@ bot.onText(/\/pagou/, (msg) => {
 });
 
 bot.onText(/\/registerpix/, (msg) => {
+  trackBotInstallation(msg);
+
   const userId = msg.from.id;
 
   if (!allowedUsers(userId)) {
@@ -137,6 +156,8 @@ bot.onText(/\/registerpix/, (msg) => {
 });
 
 bot.onText(/\/delete/, (msg) => {
+  trackBotInstallation(msg);
+
   const userId = msg.from.id;
   if (!allowedUsers(userId)) {
     userHasNoPermission(bot, msg);
@@ -148,6 +169,8 @@ bot.onText(/\/delete/, (msg) => {
 });
 
 bot.onText(/\/ia/, (msg) => {
+  trackBotInstallation(msg);
+
   bot.sendMessage(
     msg.chat.id,
     "Oi, sou a inteligência artificial do bot de faturas.\n\nNo momento, sou apenas um bot de faturas.\n\nPara saber mais sobre mim, digite /help",
@@ -161,6 +184,8 @@ bot.onText(/\/ia/, (msg) => {
 
 // Handle user responses
 bot.on("message", async (msg) => {
+  trackBotInstallation(msg);
+
   const text = msg.text;
 
   if (process.env.LOG) console.debug(msg);
@@ -228,6 +253,13 @@ bot.on("message", async (msg) => {
 
 // Handle callback queries
 bot.on("callback_query", async (callbackQuery) => {
+  if (callbackQuery.message) {
+    trackBotInstallation({
+      ...callbackQuery.message,
+      from: callbackQuery.from,
+    });
+  }
+
   if (callbackQuery.data === "/cancel") {
     return;
   }
