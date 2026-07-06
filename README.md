@@ -55,6 +55,7 @@ admin_panel/
 - `POST /api/users/upsert`
 - `GET /api/users`
 - `GET /api/users/allowed`
+- `GET /api/users/:telegramUserId/bot-installations`
 - `GET /api/users/:telegramId`
 - `PATCH /api/users/:telegramId`
 - `GET /api/banks`
@@ -105,9 +106,15 @@ keyboard.
 PIX keys reference banks through `pix_keys.bank_id`. API responses still include
 `bank` as the bank name for Telegram callback compatibility.
 
-New agenda payments use explicit responsible users when provided. Otherwise,
-backend selects all users with `is_allowed = TRUE`. If none exist yet, it falls
-back to the creator only.
+Agenda creation:
+
+- Any user can start `/agenda`.
+- The bot first lists groups/channels where that user has been seen.
+- The user must select one group/channel to attach the bill to.
+- If the user belongs to no registered group/channel, agenda creation is
+  blocked.
+- New agenda payments default responsible members to users seen in the selected
+  group/channel.
 
 `bot_installations` stores Telegram groups, supergroups, and channels where the
 bot is present. Private chats are not stored as bot installations; private users

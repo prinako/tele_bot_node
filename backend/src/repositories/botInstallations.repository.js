@@ -273,11 +273,15 @@ async function getBotInstallationsByTelegramUserId(telegramUserId) {
         installations.*,
         installation_users.first_seen_at AS membership_first_seen_at,
         installation_users.last_seen_at AS membership_last_seen_at,
-        installation_users.message_count
+        installation_users.message_count AS membership_message_count
       FROM bot_installation_users installation_users
       JOIN bot_installations installations
         ON installations.id = installation_users.bot_installation_id
-      WHERE installation_users.telegram_user_id = $1
+      JOIN users
+        ON users.id = installation_users.user_id
+      WHERE users.telegram_id = $1
+        AND installations.chat_type IN ('group', 'supergroup', 'channel')
+        AND installations.bot_status = 'active'
       ORDER BY
         installation_users.last_seen_at DESC,
         installations.title ASC NULLS LAST,
@@ -287,9 +291,11 @@ async function getBotInstallationsByTelegramUserId(telegramUserId) {
 
   return result.rows.map((row) => ({
     ...mapInstallation(row),
-    membershipFirstSeenAt: row.membership_first_seen_at,
-    membershipLastSeenAt: row.membership_last_seen_at,
-    messageCount: row.message_count,
+    membership: {
+      firstSeenAt: row.membership_first_seen_at,
+      lastSeenAt: row.membership_last_seen_at,
+      messageCount: row.membership_message_count,
+    },
   }));
 }
 

@@ -3,6 +3,12 @@ import * as agendaService from "../services/agenda.service.js";
 async function create(req, res, next) {
   try {
     const agenda = await agendaService.createAgendaPayment(req.body);
+    if (agenda?.error) {
+      return res.status(agenda.status || 400).json({
+        error: agenda.error,
+      });
+    }
+
     if (!agenda) {
       return res.status(400).json({
         error: "Agenda payment could not be created",

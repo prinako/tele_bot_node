@@ -1,10 +1,9 @@
-// const moment = require('moment');
-// const agendaFormatter = require('../utilities/agenda_formatter');
-// const generateBankKeyboard = require('../utilities/generate_banks_keyboard');
-// const getUserPixBySenderBankAsKeyboard = require('../utilities/get_all_pix_as_keyboard');
-
 import moment from "moment";
-import { insetAgendaPayment, insetPix } from "../api/backendClient.js";
+import {
+  getUserBotInstallations,
+  insetAgendaPayment,
+  insetPix,
+} from "../api/backendClient.js";
 import agendaFormatter from "../utilities/agenda_formatter.js";
 import generateBankKeyboard from "../utilities/generate_banks_keyboard.js";
 import getUserPixBySenderBankAsKeyboard from "../utilities/get_all_pix_as_keyboard.js";
@@ -34,7 +33,12 @@ class AgendaPayment {
     this.bot = bot; // Store the bot instance
 
     // Initialize state properties
-    this._stage = "selectMonth"; // Initialize the stage to 'selectMonth'
+    this._stage = "selectInstallation";
+    this._installations = [];
+    this._selectedInstallation = null;
+    this._selectedChatId = null;
+    this._selectedChatTitle = null;
+    this._selectedChatType = null;
     this._selectedMonth = "";
     this._selectedDay = "";
     this._selectedTitle = "";
@@ -46,7 +50,7 @@ class AgendaPayment {
     this.chat_id = "";
     this.message_id = "";
     this.message_thread_id = "";
-    this._selectedTopicId = process.env.BILLS_THREAD_ID;
+    this._selectedTopicId = null;
   }
 
   /**
@@ -198,6 +202,80 @@ class AgendaPayment {
     return this._selectedTopicId;
   }
 
+  set installations(v) {
+    this._installations = Array.isArray(v) ? v : [];
+  }
+  get installations() {
+    return this._installations;
+  }
+
+  set selectedInstallation(v) {
+    this._selectedInstallation = v;
+  }
+  get selectedInstallation() {
+    return this._selectedInstallation;
+  }
+
+  set selectedChatId(v) {
+    this._selectedChatId = v === null || v === undefined ? null : Number(v);
+  }
+  get selectedChatId() {
+    return this._selectedChatId;
+  }
+
+  set selectedChatTitle(v) {
+    this._selectedChatTitle = v;
+  }
+  get selectedChatTitle() {
+    return this._selectedChatTitle;
+  }
+
+  set selectedChatType(v) {
+    this._selectedChatType = v;
+  }
+  get selectedChatType() {
+    return this._selectedChatType;
+  }
+
+  installationLabel(installation) {
+    return installation.title || installation.username ||
+      String(installation.telegramChatId);
+  }
+
+  async start(msg) {
+    const installations = await getUserBotInstallations(msg.from.id);
+
+    if (!installations || installations.length === 0) {
+      await this.bot.sendMessage(
+        msg.chat.id,
+        "Você ainda não pertence a nenhum grupo/canal registrado pelo bot. Entre em um grupo onde o bot está ativo e envie uma mensagem lá primeiro. Depois tente /agenda novamente.",
+        { message_thread_id: msg.message_thread_id },
+      );
+      return false;
+    }
+
+    this.installations = installations;
+    this.stage = "selectInstallation";
+
+    await this.bot.sendMessage(
+      msg.chat.id,
+      "Em qual grupo/canal você quer anexar esta fatura?",
+      {
+        message_thread_id: msg.message_thread_id,
+        reply_markup: {
+          inline_keyboard: installations.map((installation) => [
+            {
+              text: this.installationLabel(installation),
+              callback_data: `agenda_chat_${installation.telegramChatId}`,
+            },
+          ]),
+        },
+      },
+    );
+
+    return true;
+  }
+
   /**
    * Generates a keyboard for selecting months.
    * @return {Object[][]} a 2D array of objects where each object has a text and a callback_data property
@@ -259,11 +337,11 @@ class AgendaPayment {
     const dueDate =
       `${this.selectedDay}/${this.selectedMonth}/${moment().year()}`;
     const dataToDB = {
-      chatId: process.env.CHAT_ID,
+      chatId: this.selectedChatId,
       senderId: userId,
       user,
       messageThreadId: messageThreadId,
-      topicId: this.selectedTopicId,
+      topicId: this.selectedTopicId || null,
       date: dueDate,
       title: this.selectedTitle,
       amount: this.selectedAmount,
@@ -415,6 +493,43 @@ class AgendaPayment {
     this.chat_id = chatId;
     this.message_id = msg.message_id;
     this.message_thread_id = msg.message_thread_id;
+
+    if (data.startsWith("agenda_chat_")) {
+      const telegramChatId = Number(data.replace("agenda_chat_", ""));
+      const installations = await getUserBotInstallations(userId);
+      const selected = installations.find((installation) =>
+        Number(installation.telegramChatId) === telegramChatId
+      );
+
+      if (!selected) {
+        await this.bot.answerCallbackQuery(callbackQuery.id, {
+          text: "Você não pertence a esse grupo/canal.",
+          show_alert: true,
+        });
+        return;
+      }
+
+      this.installations = installations;
+      this.selectedInstallation = selected;
+      this.selectedChatId = selected.telegramChatId;
+      this.selectedChatTitle = this.installationLabel(selected);
+      this.selectedChatType = selected.chatType;
+      this.selectedTopicId = null;
+      this.stage = "selectMonth";
+
+      await this.bot.answerCallbackQuery(callbackQuery.id);
+      await this.bot.editMessageText(
+        `Fatura será anexada em: ${this.selectedChatTitle}\n\nAgora selecione o mês:`,
+        {
+          chat_id: this.chat_id,
+          message_id: this.message_id,
+          reply_markup: {
+            inline_keyboard: this.generateMonthKeyboard(),
+          },
+        },
+      );
+      return;
+    }
 
     // Handle month selection
     if (data.startsWith("month_")) {

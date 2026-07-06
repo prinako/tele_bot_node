@@ -1,7 +1,6 @@
 import { getClient, query } from "../db/postgres.js";
 import {
   findUserByTelegramId,
-  getAllowedUsers,
   upsertUser,
 } from "./users.repository.js";
 import {
@@ -172,15 +171,96 @@ async function resolveResponsibleUsers(db, data, creator) {
     }
 
     const uniqueUsers = uniqueByTelegramId(users);
-    return uniqueUsers.length > 0 ? uniqueUsers : [creator];
+    if (!data.chatId) {
+      return uniqueUsers.length > 0 ? uniqueUsers : creator ? [creator] : [];
+    }
+
+    const installationUsers = await filterUsersByBotInstallationChatId(
+      db,
+      data.chatId,
+      uniqueUsers,
+    );
+    return installationUsers.length > 0
+      ? installationUsers
+      : creator ? [creator] : [];
   }
 
-  const allowedUsers = await getAllowedUsers(db);
-  if (allowedUsers.length > 0) {
-    return allowedUsers;
+  if (data.chatId) {
+    const installationUsers = await getUsersByBotInstallationChatId(
+      db,
+      data.chatId,
+    );
+    return installationUsers.length > 0
+      ? installationUsers
+      : creator ? [creator] : [];
   }
 
-  return [creator];
+  return creator ? [creator] : [];
+}
+
+async function userBelongsToBotInstallationChat(db, telegramUserId, chatId) {
+  const result = await db.query(
+    `SELECT 1
+       FROM bot_installation_users biu
+       JOIN bot_installations bi ON bi.id = biu.bot_installation_id
+       JOIN users u ON u.id = biu.user_id
+      WHERE u.telegram_id = $1
+        AND bi.telegram_chat_id = $2
+        AND bi.chat_type IN ('group', 'supergroup', 'channel')
+        AND bi.bot_status = 'active'
+      LIMIT 1`,
+    [telegramUserId, chatId],
+  );
+
+  return result.rowCount > 0;
+}
+
+async function getUsersByBotInstallationChatId(db, telegramChatId) {
+  const result = await db.query(
+    `SELECT u.*
+       FROM bot_installation_users biu
+       JOIN bot_installations bi ON bi.id = biu.bot_installation_id
+       JOIN users u ON u.id = biu.user_id
+      WHERE bi.telegram_chat_id = $1
+        AND bi.chat_type IN ('group', 'supergroup', 'channel')
+        AND bi.bot_status = 'active'
+      ORDER BY
+        u.display_name ASC NULLS LAST,
+        u.first_name ASC NULLS LAST,
+        u.username ASC NULLS LAST,
+        u.telegram_id ASC`,
+    [telegramChatId],
+  );
+
+  return result.rows;
+}
+
+async function filterUsersByBotInstallationChatId(db, telegramChatId, users) {
+  const telegramIds = uniqueByTelegramId(users).map((user) =>
+    Number(user.telegram_id)
+  );
+  if (telegramIds.length === 0) {
+    return [];
+  }
+
+  const result = await db.query(
+    `SELECT u.*
+       FROM bot_installation_users biu
+       JOIN bot_installations bi ON bi.id = biu.bot_installation_id
+       JOIN users u ON u.id = biu.user_id
+      WHERE bi.telegram_chat_id = $1
+        AND u.telegram_id = ANY($2::bigint[])
+        AND bi.chat_type IN ('group', 'supergroup', 'channel')
+        AND bi.bot_status = 'active'
+      ORDER BY
+        u.display_name ASC NULLS LAST,
+        u.first_name ASC NULLS LAST,
+        u.username ASC NULLS LAST,
+        u.telegram_id ASC`,
+    [telegramChatId, telegramIds],
+  );
+
+  return result.rows;
 }
 
 async function resolveBank(db, data) {
@@ -260,6 +340,21 @@ async function insetAgendaPayment(data, next) {
     await db.query("BEGIN");
 
     const creator = await upsertUser(db, data);
+    if (data.chatId) {
+      const canCreate = await userBelongsToBotInstallationChat(
+        db,
+        creator.telegram_id,
+        data.chatId,
+      );
+      if (!canCreate) {
+        const error = new Error(
+          "User does not belong to the selected group/channel",
+        );
+        error.status = 403;
+        throw error;
+      }
+    }
+
     const bank = await resolveBank(db, data);
     if (!bank) {
       await db.query("ROLLBACK");
@@ -349,6 +444,9 @@ async function insetAgendaPayment(data, next) {
   } catch (err) {
     await db.query("ROLLBACK");
     console.log(err);
+    if (err.status) {
+      return next({ error: err.message, status: err.status });
+    }
     return next(false);
   } finally {
     db.release();

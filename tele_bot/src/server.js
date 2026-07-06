@@ -90,7 +90,7 @@ bot.onText(/\/start/, (msg) => {
 });
 
 // Command /agenda to initiate the month selection
-bot.onText(/\/agenda/, (msg) => {
+bot.onText(/\/agenda/, async (msg) => {
   trackTelegramUserAndMembership(msg);
   if (!msg.from?.id) {
     return;
@@ -98,24 +98,24 @@ bot.onText(/\/agenda/, (msg) => {
 
   const userId = msg.from.id;
   if (agendaUsersState[userId]) {
-    agendaUsersState[userId] = {};
-  }
-  if (!allowedUsers(userId)) {
-    userHasNoPermission(bot, msg);
-    return;
+    delete agendaUsersState[userId];
   }
   agendaUsersState[userId] = new AgendaPayment(bot);
 
-  bot.sendMessage(
-    msg.chat.id,
-    "Vamos registrar o pagamento de fatura em pendente\n\nPor favor, selecione o mês de vencimento:",
-    {
-      message_thread_id: msg.message_thread_id,
-      reply_markup: {
-        inline_keyboard: agendaUsersState[userId].generateMonthKeyboard(),
-      },
-    },
-  );
+  try {
+    const started = await agendaUsersState[userId].start(msg);
+    if (!started) {
+      delete agendaUsersState[userId];
+    }
+  } catch (error) {
+    console.error("Failed to start agenda flow:", error);
+    delete agendaUsersState[userId];
+    await bot.sendMessage(
+      msg.chat.id,
+      "Não consegui iniciar a agenda agora. Tente novamente em alguns instantes.",
+      { message_thread_id: msg.message_thread_id },
+    );
+  }
 });
 
 bot.onText(/\/help/, (msg) => {

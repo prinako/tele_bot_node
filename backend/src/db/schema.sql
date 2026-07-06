@@ -1,5 +1,5 @@
--- Canonical PostgreSQL schema for fresh installs (docker-entrypoint-initdb.d).
--- Not in production yet: after schema changes, reset the data volume instead of running migrations.
+-- Canonical PostgreSQL schema.
+-- The backend applies this file on startup; statements must stay idempotent.
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
