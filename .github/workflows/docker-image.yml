@@ -40,6 +40,10 @@ jobs:
             context: ./tele_bot
             dockerfile: ./tele_bot/Dockerfile
             image_suffix: tele_bot
+          - name: admin_panel
+            context: ./admin_panel
+            dockerfile: ./admin_panel/Dockerfile
+            image_suffix: admin_panel
 
     steps:
       - name: Checkout repository
