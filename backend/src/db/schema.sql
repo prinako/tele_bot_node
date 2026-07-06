@@ -143,6 +143,7 @@ CREATE TABLE IF NOT EXISTS bot_installation_topics (
   )
 );
 
+-- Topic settings FKs: added after bot_installation_topics exists (circular reference).
 ALTER TABLE bot_installations
   ADD COLUMN IF NOT EXISTS agenda_register_topic_id UUID
     REFERENCES bot_installation_topics(id) ON DELETE SET NULL,
