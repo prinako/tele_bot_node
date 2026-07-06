@@ -1,6 +1,6 @@
 const BACKEND_URL =
   import.meta.env.VITE_BACKEND_URL ||
-  "http://backend:3000";
+  "api-telebot.home.prinako.onlin";
 
 
 async function request(path, options = {}) {
