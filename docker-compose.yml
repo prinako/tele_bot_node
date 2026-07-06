@@ -43,6 +43,7 @@ services:
       - telebot
 
   admin_panel:
+    image: ghcr.io/prinako/tele_bot_node/admin_panel:dev
     build:
       context: ./admin_panel
       dockerfile: Dockerfile
