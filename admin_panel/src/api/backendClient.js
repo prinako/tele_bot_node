@@ -103,6 +103,10 @@ export function getBotInstallationTopics(telegramChatId) {
   return request(`/api/bot-installations/${telegramChatId}/topics`);
 }
 
+export function getBotInstallationUsers(telegramChatId) {
+  return request(`/api/bot-installations/${telegramChatId}/users`);
+}
+
 export function markAgendaMemberPaid(id, telegramId) {
   return request(`/api/agenda/${id}/members/${telegramId}/paid`, {
     method: "PATCH",

@@ -9,6 +9,7 @@ const cards = [
   ["paidAgendaPaymentsCount", "Paid Agenda"],
   ["botInstallationsCount", "Bot Installations"],
   ["botInstallationTopicsCount", "Topics"],
+  ["botInstallationUsersCount", "Installation Users"],
 ];
 
 export default function DashboardPage() {

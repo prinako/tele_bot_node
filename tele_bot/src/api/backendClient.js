@@ -45,6 +45,13 @@ async function upsertBotInstallationTopic(data) {
   });
 }
 
+async function upsertBotInstallationUser(data) {
+  return request("/api/bot-installations/users/upsert", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
 async function getBotInstallations() {
   return request("/api/bot-installations");
 }
@@ -196,5 +203,6 @@ export {
   updatePixWithCallback as updatePix,
   upsertBotInstallation,
   upsertBotInstallationTopic,
+  upsertBotInstallationUser,
   upsertUser,
 };

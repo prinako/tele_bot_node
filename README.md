@@ -72,6 +72,8 @@ admin_panel/
 - `GET /api/bot-installations/:telegramChatId`
 - `POST /api/bot-installations/topics/upsert`
 - `GET /api/bot-installations/:telegramChatId/topics`
+- `POST /api/bot-installations/users/upsert`
+- `GET /api/bot-installations/:telegramChatId/users`
 - `POST /api/agenda`
 - `GET /api/agenda`
 - `GET /api/agenda/user/:telegramId`
@@ -94,6 +96,7 @@ design:
 - `agenda_payment_members`
 - `bot_installations`
 - `bot_installation_topics`
+- `bot_installation_users`
 
 Banks are stored in the backend PostgreSQL `banks` table and exposed through
 `GET /api/banks`. The Telegram bot uses this endpoint to build the bank
@@ -106,15 +109,20 @@ New agenda payments use explicit responsible users when provided. Otherwise,
 backend selects all users with `is_allowed = TRUE`. If none exist yet, it falls
 back to the creator only.
 
-`bot_installations` stores Telegram groups, supergroups, and channels where the
-bot is present. Private user chats stay in `users` and are not stored as bot
-installations. `bot_installation_topics` stores forum topics/message threads
-inside those groups, supergroups, and channels.
+`bot_installations` stores Telegram private chats, groups, supergroups, and
+channels where the bot is present. `users` stores people who use the bot.
+`bot_installation_users` links users to the chat where they were seen and tracks
+first seen, last seen, and message count. `bot_installation_topics` stores forum
+topics/message threads inside groups, supergroups, and channels.
 
-For existing PostgreSQL volumes, apply the bot installation migration:
+The schema is not in production yet. `schema.sql` is the single source of truth
+and runs automatically only on a **new** PostgreSQL data directory. After schema
+changes during development, reset the database:
 
 ```bash
-docker exec -i tele-bot-postgres psql -U telebot -d telebot < backend/src/db/migrations/003_bot_installations_topics.sql
+docker compose down
+sudo rm -rf /Kojo/Docker/tele_bot_node/postgres
+docker compose up -d postgres
 ```
 
 ## Environment
@@ -171,15 +179,15 @@ Pages:
 - Agenda
 - Agenda Details
 - Groups & Channels
-- Group or Channel Details
+- Chat Details
 
 For Docker, `VITE_BACKEND_URL` is a browser-side URL baked into the Vite build.
 The default is `http://localhost:3000`, so the backend port must be exposed to
 the browser.
 
-The admin panel includes a Groups & Channels page showing Telegram groups,
-supergroups, and channels where the bot is active, plus topics registered under
-each chat.
+The admin panel includes a Groups & Channels page showing Telegram private
+chats, groups, supergroups, and channels where the bot is active, plus users and
+topics registered under each chat.
 
 Do not expose the admin panel publicly until authentication is added. Use it
 only on LAN/VPN or behind a protected reverse proxy.

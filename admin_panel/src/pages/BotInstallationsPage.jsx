@@ -18,7 +18,8 @@ export default function BotInstallationsPage() {
         <div>
           <h1>Groups & Channels</h1>
           <p>
-            Telegram groups, supergroups, and channels where the bot is active.
+            Telegram private chats, groups, supergroups, and channels where the
+            bot is active.
           </p>
         </div>
       </header>

@@ -11,7 +11,8 @@ async function getStats() {
         (SELECT COUNT(*)::int FROM agenda_payments WHERE is_fully_paid = FALSE) AS unpaid_agenda_payments_count,
         (SELECT COUNT(*)::int FROM agenda_payments WHERE is_fully_paid = TRUE) AS paid_agenda_payments_count,
         (SELECT COUNT(*)::int FROM bot_installations) AS bot_installations_count,
-        (SELECT COUNT(*)::int FROM bot_installation_topics) AS bot_installation_topics_count`,
+        (SELECT COUNT(*)::int FROM bot_installation_topics) AS bot_installation_topics_count,
+        (SELECT COUNT(*)::int FROM bot_installation_users) AS bot_installation_users_count`,
   );
 
   const row = result.rows[0];
@@ -23,6 +24,7 @@ async function getStats() {
     paidAgendaPaymentsCount: row.paid_agenda_payments_count,
     botInstallationsCount: row.bot_installations_count,
     botInstallationTopicsCount: row.bot_installation_topics_count,
+    botInstallationUsersCount: row.bot_installation_users_count,
   };
 }
 

@@ -58,4 +58,37 @@ async function listTopics(req, res, next) {
   }
 }
 
-export { getByTelegramChatId, list, listTopics, upsert, upsertTopic };
+async function upsertUser(req, res, next) {
+  try {
+    const installationUser = await botInstallationsService
+      .upsertInstallationUser(req.body);
+    res.status(201).json(installationUser);
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function listUsers(req, res, next) {
+  try {
+    const users = await botInstallationsService.listUsers(
+      req.params.telegramChatId,
+    );
+    if (!users) {
+      return res.status(404).json({ error: "Bot installation not found" });
+    }
+
+    return res.json(users);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export {
+  getByTelegramChatId,
+  list,
+  listTopics,
+  listUsers,
+  upsert,
+  upsertTopic,
+  upsertUser,
+};

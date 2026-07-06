@@ -1,3 +1,6 @@
+-- Canonical PostgreSQL schema for fresh installs (docker-entrypoint-initdb.d).
+-- Not in production yet: after schema changes, reset the data volume instead of running migrations.
+
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE IF NOT EXISTS users (
@@ -100,7 +103,9 @@ CREATE TABLE IF NOT EXISTS bot_installations (
 
   telegram_chat_id BIGINT NOT NULL UNIQUE,
 
-  chat_type TEXT NOT NULL CHECK (chat_type IN ('group', 'supergroup', 'channel')),
+  chat_type TEXT NOT NULL CHECK (
+    chat_type IN ('private', 'group', 'supergroup', 'channel')
+  ),
   title TEXT,
   username TEXT,
 
@@ -135,6 +140,30 @@ CREATE TABLE IF NOT EXISTS bot_installation_topics (
   CONSTRAINT unique_bot_installation_topic UNIQUE (
     bot_installation_id,
     message_thread_id
+  )
+);
+
+CREATE TABLE IF NOT EXISTS bot_installation_users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+  bot_installation_id UUID NOT NULL REFERENCES bot_installations(id)
+    ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id)
+    ON DELETE CASCADE,
+
+  telegram_chat_id BIGINT NOT NULL,
+  telegram_user_id BIGINT NOT NULL,
+
+  first_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  message_count INTEGER NOT NULL DEFAULT 1,
+
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+  CONSTRAINT unique_bot_installation_user UNIQUE (
+    bot_installation_id,
+    user_id
   )
 );
 
@@ -185,6 +214,15 @@ CREATE INDEX IF NOT EXISTS idx_bot_installation_topics_installation
 
 CREATE INDEX IF NOT EXISTS idx_bot_installation_topics_thread
   ON bot_installation_topics(message_thread_id);
+
+CREATE INDEX IF NOT EXISTS idx_bot_installation_users_installation
+  ON bot_installation_users(bot_installation_id);
+
+CREATE INDEX IF NOT EXISTS idx_bot_installation_users_user
+  ON bot_installation_users(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_bot_installation_users_chat_user
+  ON bot_installation_users(telegram_chat_id, telegram_user_id);
 
 INSERT INTO banks (name, sort_order)
 VALUES

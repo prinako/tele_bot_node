@@ -14,19 +14,44 @@ import {
   paidState,
   pixState,
 } from "./state/memoryState.js";
-import { registerBotInstallation } from "./utilities/registerBotInstallation.js";
+import { registerTelegramUserAndMembership } from "./utilities/registerTelegramUserAndMembership.js";
 
 // Create a new instance of the bot
 const bot = createBot();
 
 new SchedulesEveryday(bot);
 
-function trackBotInstallation(msg) {
-  void registerBotInstallation(msg);
+const trackedRegistrationMessages = new Set();
+
+function registrationKey(msg = {}) {
+  return [
+    msg.chat?.id || "no-chat",
+    msg.message_id || "no-message",
+    msg.from?.id || "no-from",
+  ].join(":");
+}
+
+function trackTelegramUserAndMembership(msg) {
+  const key = registrationKey(msg);
+  if (trackedRegistrationMessages.has(key)) {
+    return;
+  }
+
+  trackedRegistrationMessages.add(key);
+  if (trackedRegistrationMessages.size > 1000) {
+    trackedRegistrationMessages.clear();
+  }
+
+  void registerTelegramUserAndMembership(msg).catch((error) => {
+    console.error("Failed to register Telegram user/membership:", error);
+  });
 }
 
 bot.onText(/\/cancel/, (msg) => {
-  trackBotInstallation(msg);
+  trackTelegramUserAndMembership(msg);
+  if (!msg.from?.id) {
+    return;
+  }
 
   const userId = msg.from.id;
 
@@ -51,7 +76,7 @@ bot.onText(/\/cancel/, (msg) => {
 
 // Command /start to initiate the month selection
 bot.onText(/\/start/, (msg) => {
-  trackBotInstallation(msg);
+  trackTelegramUserAndMembership(msg);
 
   const chatId = msg.chat.id;
   bot.sendMessage(chatId, "Please use /agenda to start the process.", {
@@ -61,7 +86,10 @@ bot.onText(/\/start/, (msg) => {
 
 // Command /agenda to initiate the month selection
 bot.onText(/\/agenda/, (msg) => {
-  trackBotInstallation(msg);
+  trackTelegramUserAndMembership(msg);
+  if (!msg.from?.id) {
+    return;
+  }
 
   const userId = msg.from.id;
   if (agendaUsersState[userId]) {
@@ -86,7 +114,10 @@ bot.onText(/\/agenda/, (msg) => {
 });
 
 bot.onText(/\/help/, (msg) => {
-  trackBotInstallation(msg);
+  trackTelegramUserAndMembership(msg);
+  if (!msg.from?.id) {
+    return;
+  }
 
   // const chatId = msg.chat.id;
   if (!allowedUsers(msg.from.id)) {
@@ -114,7 +145,10 @@ bot.onText(/\/help/, (msg) => {
 });
 
 bot.onText(/\/whopaid/, (msg) => {
-  trackBotInstallation(msg);
+  trackTelegramUserAndMembership(msg);
+  if (!msg.from?.id) {
+    return;
+  }
 
   const userId = msg.from.id;
   if (!allowedUsers(userId)) {
@@ -130,7 +164,10 @@ bot.onText(/\/whopaid/, (msg) => {
 });
 
 bot.onText(/\/pagou/, (msg) => {
-  trackBotInstallation(msg);
+  trackTelegramUserAndMembership(msg);
+  if (!msg.from?.id) {
+    return;
+  }
 
   const userId = msg.from.id;
   if (!allowedUsers(userId)) {
@@ -142,7 +179,10 @@ bot.onText(/\/pagou/, (msg) => {
 });
 
 bot.onText(/\/registerpix/, (msg) => {
-  trackBotInstallation(msg);
+  trackTelegramUserAndMembership(msg);
+  if (!msg.from?.id) {
+    return;
+  }
 
   const userId = msg.from.id;
 
@@ -156,7 +196,10 @@ bot.onText(/\/registerpix/, (msg) => {
 });
 
 bot.onText(/\/delete/, (msg) => {
-  trackBotInstallation(msg);
+  trackTelegramUserAndMembership(msg);
+  if (!msg.from?.id) {
+    return;
+  }
 
   const userId = msg.from.id;
   if (!allowedUsers(userId)) {
@@ -169,7 +212,7 @@ bot.onText(/\/delete/, (msg) => {
 });
 
 bot.onText(/\/ia/, (msg) => {
-  trackBotInstallation(msg);
+  trackTelegramUserAndMembership(msg);
 
   bot.sendMessage(
     msg.chat.id,
@@ -184,7 +227,7 @@ bot.onText(/\/ia/, (msg) => {
 
 // Handle user responses
 bot.on("message", async (msg) => {
-  trackBotInstallation(msg);
+  trackTelegramUserAndMembership(msg);
 
   const text = msg.text;
 
@@ -195,6 +238,10 @@ bot.on("message", async (msg) => {
   }
 
   if (text === "/cancel") {
+    return;
+  }
+
+  if (!msg.from?.id) {
     return;
   }
 
@@ -254,7 +301,7 @@ bot.on("message", async (msg) => {
 // Handle callback queries
 bot.on("callback_query", async (callbackQuery) => {
   if (callbackQuery.message) {
-    trackBotInstallation({
+    trackTelegramUserAndMembership({
       ...callbackQuery.message,
       from: callbackQuery.from,
     });

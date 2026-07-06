@@ -2,9 +2,11 @@ import {
   getBotInstallationByTelegramChatId,
   getBotInstallations,
   getBotInstallationTopicsByTelegramChatId,
+  getBotInstallationUsersByTelegramChatId,
   isInstallationChatType,
   upsertBotInstallation,
   upsertBotInstallationTopic,
+  upsertBotInstallationUser,
 } from "../repositories/botInstallations.repository.js";
 
 function badRequest(message) {
@@ -24,7 +26,7 @@ async function upsertInstallation(data = {}) {
   requireValue(data.chatType, "chatType is required");
 
   if (!isInstallationChatType(data.chatType)) {
-    throw badRequest("chatType must be group, supergroup, or channel");
+    throw badRequest("chatType must be private, group, supergroup, or channel");
   }
 
   return upsertBotInstallation(data);
@@ -61,10 +63,35 @@ async function listTopics(telegramChatId) {
   return getBotInstallationTopicsByTelegramChatId(telegramChatId);
 }
 
+async function upsertInstallationUser(data = {}) {
+  requireValue(data.telegramChatId, "telegramChatId is required");
+  requireValue(data.telegramUserId, "telegramUserId is required");
+
+  const installationUser = await upsertBotInstallationUser(data);
+  if (!installationUser) {
+    const error = new Error("Bot installation or user not found");
+    error.status = 404;
+    throw error;
+  }
+
+  return installationUser;
+}
+
+async function listUsers(telegramChatId) {
+  const installation = await getBotInstallationByTelegramChatId(telegramChatId);
+  if (!installation) {
+    return null;
+  }
+
+  return getBotInstallationUsersByTelegramChatId(telegramChatId);
+}
+
 export {
   getInstallation,
   listInstallations,
   listTopics,
+  listUsers,
   upsertInstallation,
+  upsertInstallationUser,
   upsertTopic,
 };

@@ -2,21 +2,25 @@ import { useEffect, useState } from "react";
 import {
   getBotInstallation,
   getBotInstallationTopics,
+  getBotInstallationUsers,
 } from "../api/backendClient.js";
 import Table from "../components/Table.js";
 
 export default function BotInstallationDetailsPage({ telegramChatId }) {
   const [installation, setInstallation] = useState(null);
   const [topics, setTopics] = useState([]);
+  const [users, setUsers] = useState([]);
   const [error, setError] = useState("");
 
   async function load() {
-    const [installationData, topicData] = await Promise.all([
+    const [installationData, topicData, userData] = await Promise.all([
       getBotInstallation(telegramChatId),
       getBotInstallationTopics(telegramChatId),
+      getBotInstallationUsers(telegramChatId),
     ]);
     setInstallation(installationData);
     setTopics(topicData);
+    setUsers(userData);
   }
 
   useEffect(() => {
@@ -27,8 +31,8 @@ export default function BotInstallationDetailsPage({ telegramChatId }) {
     <section>
       <header className="page-header">
         <div>
-          <h1>{installation?.title || "Group or Channel"}</h1>
-          <p>Installation details and registered forum topics.</p>
+          <h1>{installation?.title || "Chat Details"}</h1>
+          <p>Installation details, seen users, and registered forum topics.</p>
         </div>
         <a className="button-link" href="#/bot-installations">Back</a>
       </header>
@@ -61,6 +65,23 @@ export default function BotInstallationDetailsPage({ telegramChatId }) {
           </div>
         </div>
       )}
+      <h2>Users</h2>
+      <Table
+        columns={[
+          { key: "telegramUserId", label: "Telegram User ID" },
+          { key: "displayName", label: "Display" },
+          { key: "username", label: "Username" },
+          { key: "firstName", label: "First" },
+          { key: "lastName", label: "Last" },
+          { key: "isAllowed", label: "Allowed" },
+          { key: "isAdmin", label: "Admin" },
+          { key: "messageCount", label: "Messages" },
+          { key: "firstSeenAt", label: "First Seen" },
+          { key: "lastSeenAt", label: "Last Seen" },
+        ]}
+        rows={users}
+      />
+      <h2>Topics</h2>
       <Table
         columns={[
           { key: "messageThreadId", label: "Message Thread ID" },
