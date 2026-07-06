@@ -69,6 +69,10 @@ async function upsertBotInstallation(data = {}) {
         chat_type = EXCLUDED.chat_type,
         title = EXCLUDED.title,
         username = EXCLUDED.username,
+        added_by_telegram_user_id = COALESCE(
+          bot_installations.added_by_telegram_user_id,
+          EXCLUDED.added_by_telegram_user_id
+        ),
         bot_status = 'active',
         last_seen_at = NOW(),
         updated_at = NOW()
@@ -142,7 +146,7 @@ async function upsertBotInstallationTopic(data = {}) {
   return mapTopic(result.rows[0]) || null;
 }
 
-async function getBotInstallationTopics(telegramChatId) {
+async function getBotInstallationTopicsByTelegramChatId(telegramChatId) {
   const result = await query(
     `SELECT topics.*, installations.telegram_chat_id
        FROM bot_installation_topics topics
@@ -160,7 +164,7 @@ async function getBotInstallationTopics(telegramChatId) {
 export {
   getBotInstallationByTelegramChatId,
   getBotInstallations,
-  getBotInstallationTopics,
+  getBotInstallationTopicsByTelegramChatId,
   isInstallationChatType,
   upsertBotInstallation,
   upsertBotInstallationTopic,
