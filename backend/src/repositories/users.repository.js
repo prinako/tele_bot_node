@@ -30,6 +30,26 @@ function userPayloadFromData(data = {}) {
   };
 }
 
+function mapUser(row) {
+  if (!row) {
+    return row;
+  }
+
+  return {
+    id: row.id,
+    telegramId: Number(row.telegram_id),
+    username: row.username,
+    firstName: row.first_name,
+    lastName: row.last_name,
+    displayName: row.display_name || telegramDisplayName(row),
+    isAdmin: row.is_admin,
+    isAllowed: row.is_allowed,
+    lastSeenAt: row.last_seen_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 function allowedTelegramIds() {
   return (process.env.ALLOWED_USERS || "")
     .split(",")
@@ -109,7 +129,50 @@ async function findUserByTelegramId(db, telegramId) {
 }
 
 async function getUserByTelegramId(telegramId) {
-  return findUserByTelegramId({ query }, telegramId);
+  return mapUser(await findUserByTelegramId({ query }, telegramId));
+}
+
+async function getAllUsers() {
+  const result = await query(
+    `SELECT *
+       FROM users
+      ORDER BY
+        display_name ASC NULLS LAST,
+        telegram_id ASC`,
+  );
+
+  return result.rows.map(mapUser);
+}
+
+async function updateUserByTelegramId(telegramId, data = {}) {
+  const fields = [];
+  const values = [];
+
+  if (Object.prototype.hasOwnProperty.call(data, "isAllowed")) {
+    values.push(data.isAllowed);
+    fields.push(`is_allowed = $${values.length}`);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(data, "isAdmin")) {
+    values.push(data.isAdmin);
+    fields.push(`is_admin = $${values.length}`);
+  }
+
+  if (fields.length === 0) {
+    return getUserByTelegramId(telegramId);
+  }
+
+  values.push(telegramId);
+  const result = await query(
+    `UPDATE users
+        SET ${fields.join(", ")},
+            updated_at = NOW()
+      WHERE telegram_id = $${values.length}
+      RETURNING *`,
+    values,
+  );
+
+  return mapUser(result.rows[0]) || null;
 }
 
 async function getAllowedUsers(db) {
@@ -133,8 +196,11 @@ export {
   findUserByTelegramId,
   getAllowedTelegramUsers,
   getAllowedUsers,
+  getAllUsers,
   getUserByTelegramId,
+  mapUser,
   telegramDisplayName,
+  updateUserByTelegramId,
   upsertTelegramUser,
   upsertUser,
 };
