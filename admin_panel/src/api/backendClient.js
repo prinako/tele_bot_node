@@ -1,5 +1,4 @@
 const BACKEND_URL =
-  window.APP_CONFIG?.BACKEND_URL ||
   import.meta.env.VITE_BACKEND_URL ||
   "";
 
