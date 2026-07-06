@@ -1,0 +1,819 @@
+import moment from "moment";
+import {
+  getBotInstallation,
+  getBotInstallationUsers,
+  getUserBotInstallations,
+  insetAgendaPayment,
+  insetPix,
+} from "../api/backendClient.js";
+import agendaFormatter, {
+  getAgendaMemberDisplayName,
+} from "../utilities/agenda_formatter.js";
+import generateBankKeyboard from "../utilities/generate_banks_keyboard.js";
+import getUserPixBySenderBankAsKeyboard from "../utilities/get_all_pix_as_keyboard.js";
+
+function parseCurrency(value) {
+  if (typeof value === "number") {
+    return value;
+  }
+
+  const text = String(value ?? "").trim();
+  const normalized = text.includes(",")
+    ? text.replace(/\./g, "").replace(",", ".")
+    : text;
+
+  const amount = Number(normalized.replace(/[^\d.-]/g, ""));
+  return Number.isFinite(amount) ? amount : null;
+}
+
+class AgendaPayment {
+  /**
+   * Constructor for the AgendaPayment class.
+   * Initializes the userState object and the bot instance.
+   * @param {TelegramBot} bot - The Telegram bot instance.
+   * @return {void}
+   */
+  constructor(bot) {
+    this.bot = bot; // Store the bot instance
+
+    // Initialize state properties
+    this._stage = "selectInstallation";
+    this._installations = [];
+    this._selectedInstallation = null;
+    this._selectedChatId = null;
+    this._selectedChatTitle = null;
+    this._selectedChatType = null;
+    this._availableMembers = [];
+    this._selectedMemberTelegramIds = new Set();
+    this._selectedMonth = "";
+    this._selectedDay = "";
+    this._selectedTitle = "";
+    this._selectedAmount = "";
+    this._selectedDescription = "";
+    this._selectedPix = "";
+    this._selectedBank = "";
+    this._stageTracker = false;
+    this.chat_id = "";
+    this.message_id = "";
+    this.message_thread_id = "";
+    this._selectedTopicId = null;
+  }
+
+  /**
+   * Setters and getters for stage, selectedMonth, and selectedDay
+   * These properties are used to store the current state of the user's interaction
+   * with the bot.
+   */
+  set stage(v) {
+    this._stage = v;
+  }
+  /**
+   * @return {string} the current stage of interaction
+   */
+
+  /**
+   * @return {string} the current stage of interaction
+   */
+  get stage() {
+    return this._stage;
+  }
+
+  /**
+   * @return {string} the selected month
+   */
+  get selectedMonth() {
+    return this._selectedMonth;
+  }
+
+  /**
+   * @return {string} the selected day
+   */
+  get selectedDay() {
+    return this._selectedDay;
+  }
+
+  /**
+   * @param {string} v the selected month
+   */
+  set selectedMonth(v) {
+    this._selectedMonth = v;
+  }
+  /**
+   * @param {string} v the selected day
+   */
+  set selectedDay(v) {
+    this._selectedDay = v;
+  }
+
+  // Setters and getters for selectedTitle, selectedAmount, selectedDescription, selectedPix, and selectedBank
+  // These properties are used to store the current state of the user's interaction with the bot.
+
+  /**
+   * @param {string} v the selected title
+   */
+  set selectedTitle(v) {
+    this._selectedTitle = v;
+  }
+  /**
+   * @return {string} the selected title
+   */
+  get selectedTitle() {
+    return this._selectedTitle;
+  }
+
+  /**
+   * @param {string} v the selected amount
+   */
+  set selectedAmount(v) {
+    this._selectedAmount = v;
+  }
+  /**
+   * @return {string} the selected amount
+   */
+  get selectedAmount() {
+    return this._selectedAmount;
+  }
+
+  /**
+   * @param {string} v the selected description
+   */
+  set selectedDescription(v) {
+    this._selectedDescription = v;
+  }
+  /**
+   * @return {string} the selected description
+   */
+  get selectedDescription() {
+    return this._selectedDescription;
+  }
+
+  /**
+   * @param {string} v the selected pix
+   */
+  set selectedPix(v) {
+    this._selectedPix = v;
+  }
+  /**
+   * @return {string} the selected pix
+   */
+  get selectedPix() {
+    return this._selectedPix;
+  }
+
+  /**
+   * @param {string} v the selected bank
+   */
+  set selectedBank(v) {
+    this._selectedBank = v;
+  }
+  /**
+   * @return {string} the selected bank
+   */
+  get selectedBank() {
+    return this._selectedBank;
+  }
+
+  set stageTracker(v) {
+    this._stageTracker = v;
+  }
+  get stageTracker() {
+    return this._stageTracker;
+  }
+
+  set chat_id(v) {
+    this._chat_id = v;
+  }
+  get chat_id() {
+    return this._chat_id;
+  }
+
+  set message_id(v) {
+    this._message_id = v;
+  }
+  get message_id() {
+    return this._message_id;
+  }
+
+  set message_thread_id(v) {
+    this._message_thread_id = v;
+  }
+  get message_thread_id() {
+    return this._message_thread_id;
+  }
+
+  set selectedTopicId(v) {
+    this._selectedTopicId = v;
+  }
+  get selectedTopicId() {
+    return this._selectedTopicId;
+  }
+
+  set installations(v) {
+    this._installations = Array.isArray(v) ? v : [];
+  }
+  get installations() {
+    return this._installations;
+  }
+
+  set selectedInstallation(v) {
+    this._selectedInstallation = v;
+  }
+  get selectedInstallation() {
+    return this._selectedInstallation;
+  }
+
+  set selectedChatId(v) {
+    this._selectedChatId = v === null || v === undefined ? null : Number(v);
+  }
+  get selectedChatId() {
+    return this._selectedChatId;
+  }
+
+  set selectedChatTitle(v) {
+    this._selectedChatTitle = v;
+  }
+  get selectedChatTitle() {
+    return this._selectedChatTitle;
+  }
+
+  set selectedChatType(v) {
+    this._selectedChatType = v;
+  }
+  get selectedChatType() {
+    return this._selectedChatType;
+  }
+
+  set availableMembers(v) {
+    this._availableMembers = Array.isArray(v) ? v : [];
+  }
+  get availableMembers() {
+    return this._availableMembers;
+  }
+
+  set selectedMemberTelegramIds(v) {
+    this._selectedMemberTelegramIds = v instanceof Set ? v : new Set(v || []);
+  }
+  get selectedMemberTelegramIds() {
+    return this._selectedMemberTelegramIds;
+  }
+
+  installationLabel(installation) {
+    return installation.title || installation.username ||
+      String(installation.telegramChatId);
+  }
+
+  memberLabel(member) {
+    return getAgendaMemberDisplayName(member);
+  }
+
+  generateMembersKeyboard() {
+    const rows = this.availableMembers.map((member) => {
+      const telegramId = Number(member.telegramId || member.telegramUserId);
+      const selected = this.selectedMemberTelegramIds.has(telegramId);
+
+      return [
+        {
+          text: `${selected ? "✅" : "⬜"} ${this.memberLabel(member)}`,
+          callback_data: `agenda_member_${telegramId}`,
+        },
+      ];
+    });
+
+    rows.push([
+      {
+        text: "✅ Confirmar selecionados",
+        callback_data: "agenda_members_done",
+      },
+    ]);
+
+    return rows;
+  }
+
+  async start(msg) {
+    const installations = await getUserBotInstallations(msg.from.id);
+
+    if (!installations || installations.length === 0) {
+      await this.bot.sendMessage(
+        msg.chat.id,
+        "Você ainda não pertence a nenhum grupo/canal registrado pelo bot. Entre em um grupo onde o bot está ativo e envie uma mensagem lá primeiro. Depois tente /agenda novamente.",
+        { message_thread_id: msg.message_thread_id },
+      );
+      return false;
+    }
+
+    this.installations = installations;
+    this.stage = "selectInstallation";
+
+    await this.bot.sendMessage(
+      msg.chat.id,
+      "Em qual grupo/canal você quer anexar esta fatura?",
+      {
+        message_thread_id: msg.message_thread_id,
+        reply_markup: {
+          inline_keyboard: installations.map((installation) => [
+            {
+              text: this.installationLabel(installation),
+              callback_data: `agenda_chat_${installation.telegramChatId}`,
+            },
+          ]),
+        },
+      },
+    );
+
+    return true;
+  }
+
+  /**
+   * Generates a keyboard for selecting months.
+   * @return {Object[][]} a 2D array of objects where each object has a text and a callback_data property
+   */
+  generateMonthKeyboard() {
+    const months = moment.months();
+    const monthsInRows = [];
+    for (let i = 0; i < months.length; i += 3) {
+      monthsInRows.push(months.slice(i, i + 3));
+    }
+    return monthsInRows.map((month) =>
+      month.map((m) => ({
+        // The text to be displayed on the button
+        text: m,
+        // The callback data that will be sent when the button is clicked
+        callback_data: `month_${m}`,
+      }))
+    );
+  }
+  /**
+   * Generates a keyboard for selecting days of a given month.
+   * @param {number} year - The year to generate the days for.
+   * @param {number|string} month - The month to generate the days for. Can be a number (1-12) or a string (e.g. 'January').
+   * @return {Object[][]} a 2D array of objects where each object has a text and a callback_data property.
+   * The outer array is the calendar, and the inner arrays are the weeks.
+   */
+  generateDayKeyboard(year, month) {
+    const daysInMonth = moment(`${year}-${month}`, "YYYY-MM").daysInMonth();
+    const calendar = [];
+
+    // Add days of the month to the keyboard, grouped in rows of 7
+    let week = [];
+    for (let day = 1; day <= daysInMonth; day++) {
+      // Format the day as a two-digit string (e.g. '01', '02', etc.)
+      const dayString = day < 10 ? `0${day}` : day.toString();
+
+      // Create an object with the day as text and a callback_data property
+      // The callback_data is in the format `day_<year>_<month>_<day>`
+      const dayObject = {
+        text: dayString,
+        callback_data: `day_${year}_${month}_${day}`,
+      };
+
+      // Add the day to the current week
+      week.push(dayObject);
+
+      // If the week is full (7 days) or it's the last day, push the week
+      if (week.length === 7 || day === daysInMonth) {
+        calendar.push(week);
+        week = []; // Reset for the next week
+      }
+    }
+
+    return calendar;
+  }
+
+  // Function to send a final summary message like the image
+  async sendFinalSummary(chatId, messageThreadId, userId, user = {}) {
+    const installation = await getBotInstallation(this.selectedChatId).catch(
+      (error) => {
+        console.error(error);
+        return null;
+      },
+    );
+    const agendaTopicThreadId =
+      installation?.agendaRegisterTopic?.messageThreadId ||
+      process.env.BILLS_THREAD_ID ||
+      null;
+    const dueDate =
+      `${this.selectedDay}/${this.selectedMonth}/${moment().year()}`;
+    const dataToDB = {
+      chatId: this.selectedChatId,
+      senderId: userId,
+      user,
+      messageThreadId: agendaTopicThreadId,
+      topicId: agendaTopicThreadId,
+      date: dueDate,
+      title: this.selectedTitle,
+      amount: this.selectedAmount,
+      description: this.selectedDescription,
+      pix: this.selectedPix,
+      bank: this.selectedBank,
+      responsibleTelegramIds: Array.from(this.selectedMemberTelegramIds || []),
+    };
+
+    await insetAgendaPayment(dataToDB, (isInseted) => {
+      if (!isInseted || isInseted.error) {
+        this.bot.sendMessage(
+          chatId,
+          isInseted?.error ||
+            "Houve um erro ao registrar a fatura. Por favor, tente novamente mais tarde.",
+          {
+            message_thread_id: messageThreadId,
+          },
+        );
+        return true;
+      }
+      const paymentSummary = agendaFormatter(isInseted);
+      // Send the summary message
+      this.bot.sendMessage(isInseted.chatId, paymentSummary, {
+        message_thread_id: agendaTopicThreadId,
+        parse_mode: "Markdown",
+        reply_markup: {
+          remove_keyboard: true,
+        },
+      });
+    });
+    return true;
+  }
+
+  async insetPixToDB(data) {
+    // Insert the document into the collection
+    await insetPix(data, (result) => {
+      // if (result.error) {
+      //     console.log('Error inserting document:', result.returnData);
+      //     return false;
+      // }
+      // console.log('Document inserted successfully:', result.returnData);
+      return true;
+    });
+  }
+
+  /**
+   * Function to handle user responses
+   * @param {Object} msg - The message object sent by the user
+   * @returns {boolean} Whether the process is complete or not
+   */
+  handleResponse(msg) {
+    const chatId = msg.chat.id;
+    const userId = msg.from.id;
+    const userText = msg.text;
+    const messageThreadId = msg.message_thread_id;
+
+    switch (this.stage) {
+      case "newPix":
+        this.selectedPix = userText;
+        this.stage = "title";
+        this.bot.sendMessage(chatId, "Por favor, digite o título da fatura:", {
+          message_thread_id: messageThreadId,
+        });
+        const data = {
+          pix: this.selectedPix,
+          senderId: userId,
+          bank: this.selectedBank,
+          user: msg.from,
+        };
+        this.insetPixToDB(data);
+        return false;
+
+      case "title":
+        this.selectedTitle = userText;
+        this.stage = "amount";
+        this.bot.sendMessage(chatId, "Por favor, qual é o valor da fatura?", {
+          message_thread_id: messageThreadId,
+        });
+        return false;
+
+      case "amount":
+        this.selectedAmount = userText;
+        void this.showMemberPicker(chatId, messageThreadId, userId).catch(
+          async (error) => {
+            console.error(error);
+            await this.bot.sendMessage(
+              chatId,
+              "Não consegui carregar os membros agora. Tente novamente em alguns instantes.",
+              { message_thread_id: messageThreadId },
+            );
+          },
+        );
+        return false;
+    }
+  }
+
+  async showMemberPicker(chatId, messageThreadId, userId) {
+    if (!this.selectedChatId) {
+      this.stage = "selectInstallation";
+      await this.bot.sendMessage(
+        chatId,
+        "Escolha primeiro o grupo/canal onde essa fatura será anexada.",
+        { message_thread_id: messageThreadId },
+      );
+      return false;
+    }
+
+    const members = await getBotInstallationUsers(this.selectedChatId);
+    if (!members || members.length === 0) {
+      await this.bot.sendMessage(
+        chatId,
+        "Não encontrei membros registrados neste grupo/canal. Envie uma mensagem no grupo primeiro e tente novamente.",
+        { message_thread_id: messageThreadId },
+      );
+      return false;
+    }
+
+    this.availableMembers = members;
+    const creatorBelongsToChat = members.some((member) =>
+      Number(member.telegramId || member.telegramUserId) === Number(userId)
+    );
+    this.selectedMemberTelegramIds = new Set(
+      creatorBelongsToChat ? [Number(userId)] : [],
+    );
+    this.stage = "selectMembers";
+
+    await this.bot.sendMessage(
+      chatId,
+      "Selecione quem vai pagar essa fatura:",
+      {
+        message_thread_id: messageThreadId,
+        reply_markup: {
+          inline_keyboard: this.generateMembersKeyboard(),
+        },
+      },
+    );
+
+    return true;
+  }
+
+  /**
+   * Divide the account by the number of dividers.
+   * @param {number|string} account - The account to be divided.
+   * @param {number|string} numberOfDividers - The number of dividers.
+   * @return {boolean} true if the divider was successful, false otherwise.
+   */
+  dividers(account, numberOfDividers) {
+    // Attempt to convert the account and number of dividers to numbers
+    const acc = parseCurrency(account);
+    const dividers = Number(numberOfDividers);
+
+    // Check if the conversion was successful
+    if (!acc || !dividers || dividers <= 0) {
+      return false;
+    }
+
+    // Calculate the divided amount and set the selected description
+    const dividedAmount = acc / dividers;
+    this.selectedDescription = `R$ ${
+      dividedAmount.toFixed(2)
+    } por cada pessoa \n\n R$ ${acc}/${dividers} = R$ ${
+      dividedAmount.toFixed(2)
+    }`;
+    return true;
+  }
+
+  /**
+   * Handles callback queries from the user.
+   * Depending on the current stage of the interaction, the user's response will be handled differently.
+   * @param {Object} callbackQuery - The callback query object sent by the user.
+   */
+  async handleKeyboard(callbackQuery) {
+    const msg = callbackQuery.message;
+    const userId = callbackQuery.from.id;
+    const data = callbackQuery.data;
+    const chatId = msg.chat.id;
+
+    this.chat_id = chatId;
+    this.message_id = msg.message_id;
+    this.message_thread_id = msg.message_thread_id;
+
+    if (data.startsWith("agenda_member_")) {
+      const telegramId = Number(data.replace("agenda_member_", ""));
+      const isAvailable = this.availableMembers.some((member) =>
+        Number(member.telegramId || member.telegramUserId) === telegramId
+      );
+
+      if (!isAvailable) {
+        await this.bot.answerCallbackQuery(callbackQuery.id, {
+          text: "Esse membro não pertence ao grupo/canal selecionado.",
+          show_alert: true,
+        });
+        return false;
+      }
+
+      const selected = new Set(this.selectedMemberTelegramIds);
+      if (selected.has(telegramId)) {
+        selected.delete(telegramId);
+      } else {
+        selected.add(telegramId);
+      }
+      this.selectedMemberTelegramIds = selected;
+
+      await this.bot.answerCallbackQuery(callbackQuery.id);
+      await this.bot.editMessageReplyMarkup(
+        {
+          inline_keyboard: this.generateMembersKeyboard(),
+        },
+        {
+          chat_id: this.chat_id,
+          message_id: this.message_id,
+        },
+      );
+      return false;
+    }
+
+    if (data === "agenda_members_done") {
+      const responsibleCount = this.selectedMemberTelegramIds.size;
+      if (responsibleCount === 0) {
+        await this.bot.answerCallbackQuery(callbackQuery.id, {
+          text: "Selecione pelo menos uma pessoa.",
+          show_alert: true,
+        });
+        return false;
+      }
+
+      if (!this.dividers(this.selectedAmount, responsibleCount)) {
+        this.stage = "amount";
+        await this.bot.answerCallbackQuery(callbackQuery.id, {
+          text: "Valor inválido. Digite o valor da fatura novamente.",
+          show_alert: true,
+        });
+        await this.bot.sendMessage(
+          chatId,
+          "Por favor, qual é o valor da fatura?",
+          { message_thread_id: this.message_thread_id },
+        );
+        return false;
+      }
+
+      this.stage = "finalSummary";
+      await this.bot.answerCallbackQuery(callbackQuery.id);
+      await this.bot.editMessageText("Registrando fatura...", {
+        chat_id: this.chat_id,
+        message_id: this.message_id,
+      });
+      await this.sendFinalSummary(
+        chatId,
+        this.message_thread_id,
+        userId,
+        callbackQuery.from,
+      );
+      return true;
+    }
+
+    if (data.startsWith("agenda_chat_")) {
+      const telegramChatId = Number(data.replace("agenda_chat_", ""));
+      const installations = await getUserBotInstallations(userId);
+      const selected = installations.find((installation) =>
+        Number(installation.telegramChatId) === telegramChatId
+      );
+
+      if (!selected) {
+        await this.bot.answerCallbackQuery(callbackQuery.id, {
+          text: "Você não pertence a esse grupo/canal.",
+          show_alert: true,
+        });
+        return;
+      }
+
+      this.installations = installations;
+      this.selectedInstallation = selected;
+      this.selectedChatId = selected.telegramChatId;
+      this.selectedChatTitle = this.installationLabel(selected);
+      this.selectedChatType = selected.chatType;
+      this.selectedTopicId = null;
+      this.stage = "selectMonth";
+
+      await this.bot.answerCallbackQuery(callbackQuery.id);
+      await this.bot.editMessageText(
+        `Fatura será anexada em: ${this.selectedChatTitle}\n\nAgora selecione o mês:`,
+        {
+          chat_id: this.chat_id,
+          message_id: this.message_id,
+          reply_markup: {
+            inline_keyboard: this.generateMonthKeyboard(),
+          },
+        },
+      );
+      return;
+    }
+
+    // Handle month selection
+    if (data.startsWith("month_")) {
+      const selectedMonth = data.split("_")[1];
+      this.selectedMonth = moment().month(selectedMonth).format("MM");
+      this.stage = "selectDay";
+
+      // Send day selection after month
+      const year = moment().year();
+      this.bot.editMessageText(
+        `You selected the month of ${selectedMonth}. Now select the day:`,
+        {
+          chat_id: this.chat_id,
+          message_id: this.message_id,
+          reply_markup: {
+            inline_keyboard: this.generateDayKeyboard(year, this.selectedMonth),
+          },
+        },
+      );
+    }
+
+    // Handle day selection
+    if (data.startsWith("day_")) {
+      const selectedDay = data.split("_")[3];
+      this.selectedDay = selectedDay;
+      this.stage = "bank";
+
+      try {
+        const bankBtns = await generateBankKeyboard();
+        if (!bankBtns) {
+          this.bot.editMessageText(
+            "Não consegui carregar a lista de bancos agora. Tente novamente em alguns instantes.",
+            {
+              chat_id: this.chat_id,
+              message_id: this.message_id,
+            },
+          );
+          return;
+        }
+
+        this.bot.editMessageText("Por favor selecione seu banco:", {
+          chat_id: this.chat_id,
+          message_id: this.message_id,
+          // message_thread_id: this.message_thread_id,
+          reply_markup: {
+            inline_keyboard: bankBtns,
+          },
+        });
+      } catch (error) {
+        console.error(error);
+        this.bot.editMessageText(
+          "Não consegui carregar a lista de bancos agora. Tente novamente em alguns instantes.",
+          {
+            chat_id: this.chat_id,
+            message_id: this.message_id,
+          },
+        );
+      }
+    }
+
+    // Handle bank selection
+    if (data.startsWith("bank_")) {
+      const selectedBank = data.replace(/^bank_/, "");
+      this.selectedBank = selectedBank;
+
+      const btn = await getUserPixBySenderBankAsKeyboard(
+        userId,
+        selectedBank,
+        "pix",
+      );
+      if (btn && btn.length != 0) {
+        this.stage = "pix";
+        this.bot.editMessageText(
+          `Voce selecionou o banco ${selectedBank}. Por favor, selecione seu PIX:`,
+          {
+            chat_id: this.chat_id,
+            message_id: this.message_id,
+            reply_markup: {
+              inline_keyboard: btn,
+              remove_keyboard: true,
+            },
+          },
+        );
+      } else {
+        this.stage = "newPix";
+        this.bot.editMessageText(
+          `Voce selecionou o banco ${selectedBank}. Por favor, digite seu PIX:`,
+          {
+            chat_id: this.chat_id,
+            message_id: this.message_id,
+            reply_markup: {
+              inline_keyboard: [[]],
+              remove_keyboard: true,
+            },
+          },
+        );
+      }
+    }
+
+    // Handle PIX key
+    if (data.startsWith("pix_")) {
+      const selectedPix = data.split("_")[1];
+      this.selectedPix = selectedPix;
+      this.stage = "title";
+      this.bot.editMessageText("Por favor, digite o título da fatura:", {
+        chat_id: this.chat_id,
+        message_id: this.message_id,
+        reply_markup: {
+          inline_keyboard: [[]],
+          remove_keyboard: true,
+        },
+      });
+    }
+
+    // if (data.startsWith('repeat_')) {
+    //     const selectedRepeat = data.split('_')[1];
+    //     this.selectedRepeat = selectedRepeat;
+    //     this.stage = 'finalSummary';
+    //     this.sendFinalSummary(chatId, messageThreadId, userId);
+    //     return true;
+
+    // }
+  }
+}
+
+export default AgendaPayment;
