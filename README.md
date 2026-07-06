@@ -1,14 +1,18 @@
 # tele_bot_node
 
-Telegram bill-management bot split into two apps:
+Telegram bill-management bot split into three apps:
 
 ```text
 Telegram <-> tele_bot <-> HTTP API <-> backend <-> PostgreSQL
+                         ^
+                         |
+                  admin_panel
 ```
 
 `tele_bot` owns Telegram polling, command flows, in-memory state, keyboards, and
 messages. `backend` owns PostgreSQL access, business rules, users, PIX keys,
-agenda payments, and dynamic payment members.
+agenda payments, and dynamic payment members. `admin_panel` is a browser admin
+interface that talks to `backend` through HTTP only.
 
 ## Structure
 
@@ -36,18 +40,33 @@ tele_bot/
   src/keyboards/
   src/messages/
   src/state/
+
+admin_panel/
+  src/main.js
+  src/api/backendClient.js
+  src/components/
+  src/pages/
+  src/styles/
 ```
 
 ## Backend API
 
 - `GET /health`
 - `POST /api/users/upsert`
+- `GET /api/users`
 - `GET /api/users/allowed`
 - `GET /api/users/:telegramId`
+- `PATCH /api/users/:telegramId`
 - `GET /api/banks`
+- `GET /api/banks/:id`
+- `POST /api/banks`
+- `PATCH /api/banks/:id`
 - `POST /api/pix`
 - `GET /api/pix?senderId=<telegramId>&bank=<bank>`
 - `PATCH /api/pix/:id`
+- `GET /api/admin/stats`
+- `GET /api/admin/pix`
+- `GET /api/admin/agenda`
 - `POST /api/agenda`
 - `GET /api/agenda`
 - `GET /api/agenda/user/:telegramId`
@@ -101,6 +120,9 @@ PAID_THREAD_ID=
 CHAT_ID=
 
 LOG=false
+
+ADMIN_PANEL_PORT=3001
+VITE_BACKEND_URL=http://localhost:3000
 ```
 
 ## Docker
@@ -109,11 +131,34 @@ LOG=false
 docker compose build
 docker compose up -d postgres backend
 curl http://localhost:3000/health
+docker compose up -d admin_panel
 docker compose up -d tele_bot
-docker compose logs -f backend tele_bot
+docker compose logs -f backend admin_panel tele_bot
 ```
 
 The PostgreSQL data volume is mounted at `/Kojo/Docker/tele_bot_node/postgres`.
+
+## Admin Panel
+
+The admin panel runs on `http://localhost:3001` by default. It communicates with
+the backend through HTTP API calls from `admin_panel/src/api/backendClient.js`
+and does not connect to PostgreSQL directly.
+
+Pages:
+
+- Dashboard
+- Users
+- Banks
+- PIX Keys
+- Agenda
+- Agenda Details
+
+For Docker, `VITE_BACKEND_URL` is a browser-side URL baked into the Vite build.
+The default is `http://localhost:3000`, so the backend port must be exposed to
+the browser.
+
+Do not expose the admin panel publicly until authentication is added. Use it
+only on LAN/VPN or behind a protected reverse proxy.
 
 ## Bot Commands
 
@@ -143,8 +188,20 @@ npm install
 BACKEND_URL=http://localhost:3000 npm run dev
 ```
 
+Admin panel:
+
+```bash
+cd admin_panel
+npm install
+VITE_BACKEND_URL=http://localhost:3000 npm run dev
+```
+
 ## Notes
 
 `tele_bot` communicates with `backend` only through
 `tele_bot/src/api/backendClient.js`. It does not import backend database or
+repository modules.
+
+`admin_panel` communicates with `backend` only through
+`admin_panel/src/api/backendClient.js`. It does not import backend database or
 repository modules.
