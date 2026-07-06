@@ -7,6 +7,8 @@ const cards = [
   ["pixKeysCount", "PIX Keys"],
   ["unpaidAgendaPaymentsCount", "Unpaid Agenda"],
   ["paidAgendaPaymentsCount", "Paid Agenda"],
+  ["botInstallationsCount", "Bot Installations"],
+  ["botInstallationTopicsCount", "Topics"],
 ];
 
 export default function DashboardPage() {
