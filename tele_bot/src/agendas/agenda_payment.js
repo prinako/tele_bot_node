@@ -6,7 +6,9 @@ import {
   insetAgendaPayment,
   insetPix,
 } from "../api/backendClient.js";
-import agendaFormatter from "../utilities/agenda_formatter.js";
+import agendaFormatter, {
+  getAgendaMemberDisplayName,
+} from "../utilities/agenda_formatter.js";
 import generateBankKeyboard from "../utilities/generate_banks_keyboard.js";
 import getUserPixBySenderBankAsKeyboard from "../utilities/get_all_pix_as_keyboard.js";
 
@@ -261,11 +263,7 @@ class AgendaPayment {
   }
 
   memberLabel(member) {
-    const telegramId = Number(member.telegramId || member.telegramUserId);
-    return member.displayName ||
-      [member.firstName, member.lastName].filter(Boolean).join(" ") ||
-      member.username ||
-      String(telegramId);
+    return getAgendaMemberDisplayName(member);
   }
 
   generateMembersKeyboard() {

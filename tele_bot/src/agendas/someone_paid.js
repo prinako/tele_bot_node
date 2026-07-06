@@ -7,7 +7,9 @@ import {
   getBotInstallation,
   updateAgendaPayment,
 } from "../api/backendClient.js";
-import agendaFormatter from "../utilities/agenda_formatter.js";
+import agendaFormatter, {
+  getAgendaMemberDisplayName,
+} from "../utilities/agenda_formatter.js";
 import allAgendaAsKeyboard from "../utilities/all_agenda_as_keyboard.js";
 
 class SomeonePaid {
@@ -74,7 +76,7 @@ class SomeonePaid {
     const memberButtons = this.members
       .filter((member) => member.isResponsible !== false)
       .map((member) => [{
-        text: `${member.displayName || member.telegramId} ${
+        text: `${getAgendaMemberDisplayName(member)} ${
           member.isPaid ? "✅" : "❌"
         }`,
         callback_data: `member_${member.telegramId}`,

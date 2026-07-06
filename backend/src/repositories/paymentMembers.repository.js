@@ -21,6 +21,7 @@ function mapMember(member) {
     displayName: member.display_name || telegramDisplayName(member),
     isResponsible: member.is_responsible,
     isPaid: member.is_paid,
+    paidStatus: member.is_paid,
     paidAt: member.paid_at,
     amountShare:
       member.amount_share === null || member.amount_share === undefined
