@@ -148,6 +148,35 @@ async function getUserPixBySenderBank(senderId, bank) {
   }
 }
 
+async function getAllPixKeys() {
+  const result = await query(
+    `SELECT
+        pk.*,
+        u.telegram_id,
+        u.username,
+        u.first_name,
+        u.last_name,
+        u.display_name,
+        b.name AS bank_name
+      FROM pix_keys pk
+      JOIN users u ON u.id = pk.user_id
+      JOIN banks b ON b.id = pk.bank_id
+      ORDER BY pk.created_at DESC`,
+  );
+
+  return result.rows.map((row) => ({
+    ...mapPix(row),
+    owner: {
+      id: row.user_id,
+      telegramId: toNumberOrNull(row.telegram_id),
+      username: row.username,
+      firstName: row.first_name,
+      lastName: row.last_name,
+      displayName: row.display_name,
+    },
+  }));
+}
+
 async function updatePix(id, data, next) {
   const db = await getClient();
 
@@ -221,4 +250,4 @@ async function updatePix(id, data, next) {
   }
 }
 
-export { getUserPixBySenderBank, insetPix, updatePix };
+export { getAllPixKeys, getUserPixBySenderBank, insetPix, updatePix };
