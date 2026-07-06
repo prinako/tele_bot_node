@@ -97,8 +97,6 @@ async function upsertUser(db, data = {}) {
             first_name = COALESCE(EXCLUDED.first_name, users.first_name),
             last_name = COALESCE(EXCLUDED.last_name, users.last_name),
             display_name = COALESCE(EXCLUDED.display_name, users.display_name),
-            is_admin = EXCLUDED.is_admin,
-            is_allowed = EXCLUDED.is_allowed,
             last_seen_at = NOW(),
             updated_at = NOW()
         RETURNING *`,
