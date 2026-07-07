@@ -4,8 +4,6 @@ import SomeonePaid from "./agendas/someone_paid.js";
 import SchedulesEveryday from "./schedules/schedules_everyday.js";
 import Paid from "./agendas/paid.js";
 import Pix from "./agendas/add_pix_to_db.js";
-import allowedUsers from "./auth/auth.js";
-import userHasNoPermission from "./utilities/has_no_permissions.js";
 import DeleteAgenda from "./agendas/delete_agenda.js";
 import {
   agendaUsersState,
@@ -59,11 +57,6 @@ bot.onText(/\/cancel/, (msg) => {
   }
 
   const userId = msg.from.id;
-
-  if (!allowedUsers(userId)) {
-    userHasNoPermission(bot, msg);
-    return;
-  }
 
   if (agendaUsersState[userId]) {
     delete agendaUsersState[userId];
@@ -124,23 +117,9 @@ bot.onText(/\/help/, (msg) => {
     return;
   }
 
-  // const chatId = msg.chat.id;
-  if (!allowedUsers(msg.from.id)) {
-    bot.sendMessage(
-      msg.chat.id,
-      `Comandos disponíveis para ${msg.from.first_name}:\n /ia - Para conversar com a inteligência artificial.\n`,
-      {
-        message_thread_id: msg.message_thread_id,
-        chat_id: msg.chat.id,
-        message_id: msg.message_id,
-      },
-    );
-    return;
-  }
-
   bot.sendMessage(
     msg.chat.id,
-    `Comandos disponíveis para ${msg.from.first_name}:\n /agenda - Para registrar o pagamento de fatura em pendente.\n /cancel - Para cancelar a operação atual.\n /pagou - Para adicionar quem pagou a parte ele.\n /delete - Para deletar o fatura que foi registrada.\n /whopaid - Para saber quem pagou`,
+    "Comandos disponíveis:\n /agenda - Para registrar o pagamento de fatura em pendente.\n /cancel - Para cancelar a operação atual.\n /pagou - Para adicionar quem pagou a parte dele.\n /registerpix - Para registrar sua chave PIX.\n /delete - Para deletar uma fatura registrada.\n /whopaid - Para saber quem pagou.\n /ia - Para conversar com o bot.",
     {
       message_thread_id: msg.message_thread_id,
       chat_id: msg.chat.id,
@@ -156,10 +135,6 @@ bot.onText(/\/whopaid/, (msg) => {
   }
 
   const userId = msg.from.id;
-  if (!allowedUsers(userId)) {
-    userHasNoPermission(bot, msg);
-    return;
-  }
 
   if (paidState[userId]) {
     paidState[userId] = {};
@@ -175,10 +150,6 @@ bot.onText(/\/pagou/, (msg) => {
   }
 
   const userId = msg.from.id;
-  if (!allowedUsers(userId)) {
-    userHasNoPermission(bot, msg);
-    return;
-  }
   pagouState[userId] = new Paid(bot);
   pagouState[userId].paid(msg);
 });
@@ -191,11 +162,6 @@ bot.onText(/\/registerpix/, (msg) => {
 
   const userId = msg.from.id;
 
-  if (!allowedUsers(userId)) {
-    userHasNoPermission(bot, msg);
-    return;
-  }
-
   pixState[userId] = new Pix(bot);
   pixState[userId].addPix(msg);
 });
@@ -207,10 +173,6 @@ bot.onText(/\/delete/, (msg) => {
   }
 
   const userId = msg.from.id;
-  if (!allowedUsers(userId)) {
-    userHasNoPermission(bot, msg);
-    return;
-  }
 
   deleteAgendaState[userId] = new DeleteAgenda(bot);
   deleteAgendaState[userId].deleteAgenda(msg);
