@@ -13,7 +13,12 @@ import { error as logError } from "./utils/logger.js";
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  optionsSuccessStatus: 204,
+}));
 app.use(express.json());
 
 app.use(healthRoutes);
