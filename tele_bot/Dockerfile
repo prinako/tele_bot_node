@@ -13,9 +13,9 @@ LABEL org.opencontainers.image.licenses="MIT"
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY ./package.json ./package-lock.json ./
 RUN npm ci --omit=dev
 
-COPY . .
+COPY ./src ./src
 
 CMD ["npm", "start"]

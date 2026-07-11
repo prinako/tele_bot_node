@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   allowed,
   getByTelegramId,
+  getByTelegramIds,
   list,
   listBotInstallations,
   patch,
@@ -18,6 +19,7 @@ router.get(
   listBotInstallations,
 );
 router.get("/api/users/:telegramId", getByTelegramId);
+router.get("/api/users-ids/:telegramIds", getByTelegramIds);
 router.patch("/api/users/:telegramId", patch);
 
 export default router;

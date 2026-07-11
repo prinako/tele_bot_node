@@ -135,7 +135,28 @@ async function findUserByTelegramId(db, telegramId) {
   return result.rows[0] || null;
 }
 
+async function findUsersByTelegramIds(db, telegramIds) {
+  const ids = Array.isArray(telegramIds) ? telegramIds : [telegramIds];
+
+  if (ids.length === 0) {
+    return [];
+  }
+
+  const result = await db.query(
+    `SELECT *
+       FROM users
+      WHERE telegram_id = ANY($1::bigint[])`,
+    [ids],
+  );
+
+  return result.rows;
+}
+
 async function getUserByTelegramId(telegramId) {
+  return mapUser(await findUserByTelegramId({ query }, telegramId));
+}
+
+async function getUsersByTelegramIds(telegramIds) {
   return mapUser(await findUserByTelegramId({ query }, telegramId));
 }
 
@@ -202,6 +223,7 @@ export {
   getAllowedUsers,
   getAllUsers,
   getUserByTelegramId,
+  getUsersByTelegramIds,
   mapUser,
   telegramDisplayName,
   updateUserByTelegramId,
