@@ -38,6 +38,20 @@ async function getByTelegramId(req, res, next) {
   }
 }
 
+async function getByTelegramIds(req, res, next) {
+  try {
+    const user = await usersService.getUsers(req.params.telegramIds);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    return res.json(user);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+
 async function listBotInstallations(req, res, next) {
   try {
     res.json(
@@ -61,4 +75,4 @@ async function patch(req, res, next) {
   }
 }
 
-export { allowed, getByTelegramId, list, listBotInstallations, patch, upsert };
+export { allowed, getByTelegramId,getByTelegramIds, list, listBotInstallations, patch, upsert };

@@ -31,6 +31,15 @@ async function upsertUser(user) {
   });
 }
 
+/*
+*/
+async function getUsers(users) {
+  return request("/api/users-ids/telegramIds", {
+    method: "GET",
+    body: JSON.stringify(users),
+  });
+}
+
 async function upsertBotInstallation(data) {
   return request("/api/bot-installations/upsert", {
     method: "POST",

@@ -2,6 +2,7 @@ import {
   getAllowedTelegramUsers,
   getAllUsers,
   getUserByTelegramId,
+  getUsersByTelegramIds,
   updateUserByTelegramId,
   upsertTelegramUser,
 } from "../repositories/users.repository.js";
@@ -21,8 +22,13 @@ async function listUsers() {
   return getAllUsers();
 }
 
+
 async function getUser(telegramId) {
   return getUserByTelegramId(telegramId);
+}
+
+async function getUsers(telegramIds) {
+  return getUsersByTelegramIds(telegramIds);
 }
 
 async function updateUser(telegramId, data) {
@@ -36,6 +42,7 @@ async function listBotInstallations(telegramUserId) {
 export {
   getAllowedUsers,
   getUser,
+  getUsers,
   listBotInstallations,
   listUsers,
   updateUser,
