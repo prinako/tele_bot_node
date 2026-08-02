@@ -421,6 +421,7 @@ class AgendaPayment {
         return true;
       }
       console.log(isInseted);
+      
       const paymentSummary = agendaFormatter(isInseted);
       // Send the summary message
       this.bot.sendMessage(isInseted.chatId, paymentSummary, {
