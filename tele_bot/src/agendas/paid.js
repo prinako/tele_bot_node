@@ -1,12 +1,9 @@
-// const allAgendaAsKeyboard = require("../utilities/all_agenda_as_keyboard");
-// const agendaFormatter = require("../utilities/agenda_formatter");
-
+import allAgendaAsKeyboard from "../utilities/all_agenda_as_keyboard.js";
+import agendaFormatter from "../utilities/agenda_formatter.js";
 import {
   getBotInstallation,
   updateAgendaPayment,
 } from "../api/backendClient.js";
-import allAgendaAsKeyboard from "../utilities/all_agenda_as_keyboard.js";
-import agendaFormatter from "../utilities/agenda_formatter.js";
 
 class paid {
   constructor(bot) {

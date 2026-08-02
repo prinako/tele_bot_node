@@ -1,4 +1,8 @@
 import moment from "moment";
+import agendaFormatter from "../utilities/agenda_formatter.js";
+import getMemberName from "../utilities/get_member_name.js";
+import generateBankKeyboard from "../utilities/generate_banks_keyboard.js";
+import getUserPixBySenderBankAsKeyboard from "../utilities/get_all_pix_as_keyboard.js";
 import {
   getBotInstallation,
   getBotInstallationUsers,
@@ -6,11 +10,7 @@ import {
   insetAgendaPayment,
   insetPix,
 } from "../api/backendClient.js";
-import agendaFormatter, {
-  getAgendaMemberDisplayName,
-} from "../utilities/agenda_formatter.js";
-import generateBankKeyboard from "../utilities/generate_banks_keyboard.js";
-import getUserPixBySenderBankAsKeyboard from "../utilities/get_all_pix_as_keyboard.js";
+
 
 function parseCurrency(value) {
   if (typeof value === "number") {
@@ -263,7 +263,7 @@ class AgendaPayment {
   }
 
   memberLabel(member) {
-    return getAgendaMemberDisplayName(member);
+    return getMemberName(member);
   }
 
   generateMembersKeyboard() {
@@ -420,6 +420,8 @@ class AgendaPayment {
         );
         return true;
       }
+      console.log(isInseted);
+      
       const paymentSummary = agendaFormatter(isInseted);
       // Send the summary message
       this.bot.sendMessage(isInseted.chatId, paymentSummary, {
