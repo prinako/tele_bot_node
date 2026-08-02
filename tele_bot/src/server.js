@@ -5,6 +5,8 @@ import SchedulesEveryday from "./schedules/schedules_everyday.js";
 import Paid from "./agendas/paid.js";
 import Pix from "./agendas/add_pix_to_db.js";
 import DeleteAgenda from "./agendas/delete_agenda.js";
+import { registerTelegramUserAndMembership } from "./utilities/registerTelegramUserAndMembership.js";
+import { handleUserMessage } from "./handlers/handleUserMessage.js";
 import {
   agendaUsersState,
   deleteAgendaState,
@@ -12,8 +14,6 @@ import {
   paidState,
   pixState,
 } from "./state/memoryState.js";
-import { registerTelegramUserAndMembership } from "./utilities/registerTelegramUserAndMembership.js";
-import { handleUserMessage } from "./handlers/handleUserMessage.js";
 
 /**
  * Creates a new instance of the bot.
@@ -26,6 +26,12 @@ new SchedulesEveryday(bot);
 
 const trackedRegistrationMessages = new Set();
 
+/**
+ * Generates a unique key for a Telegram registration message.
+ *
+ * @param {Object} msg - The Telegram message object.
+ * @returns {string} The generated key.
+ */
 function registrationKey(msg = {}) {
   return [
     msg.chat?.id || "no-chat",
@@ -34,6 +40,11 @@ function registrationKey(msg = {}) {
   ].join(":");
 }
 
+/**
+ * Registers a Telegram user and their membership in a bot installation.
+ *
+ * @param {Object} msg - The Telegram message object.
+ */
 function trackTelegramUserAndMembership(msg) {
   const key = registrationKey(msg);
   if (trackedRegistrationMessages.has(key)) {
