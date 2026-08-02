@@ -2,12 +2,9 @@ import { getClient, query } from "../db/postgres.js";
 
 function telegramDisplayName(user = {}) {
   return user.displayName ||
-    user.display_name ||
-    [user.firstName || user.first_name, user.lastName || user.last_name].filter(
-      Boolean,
-    ).join(" ") ||
+    [user.firstName, user.lastName].filter(Boolean).join(" ") ||
     user.username ||
-    String(user.telegramId || user.telegram_id || user.senderId || "");
+    String(user.firstName || "");
 }
 
 function userPayloadFromData(data = {}) {
