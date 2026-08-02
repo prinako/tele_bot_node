@@ -99,22 +99,28 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml down
 | Variable | Required | Default | Description |
 | --- | :---: | --- | --- |
 | `BOT_TOKEN` | Yes | — | Telegram token issued by BotFather. |
-| `POSTGRES_PASSWORD` | Recommended | `telebot` | Password for the `telebot` database user. |
+| `POSTGRES_PASSWORD` | No | `telebot` | Password for the `telebot` database user. Set a strong value outside local development. |
 | `BACKEND_PORT` | No | `3000` | Backend port exposed on the host. |
-| `BACKEND_URL` | No | `http://backend:3000` | API URL used by the bot outside the standard Compose setup. |
+| `BACKEND_URL` | No | `http://localhost:3000` outside Compose | API URL used by the bot. Both Compose files set it to `http://backend:3000`. |
 | `ADMIN_PANEL_PORT` | No | `3001` | Admin panel port exposed on the host. |
 | `ADMINER_PORT` | No | `8080` | Adminer port exposed on the host. |
-| `VITE_BACKEND_URL` | No | `http://localhost:3000` | Browser-visible API URL baked into the admin build. |
-| `ALLOWED_USERS` | No | Empty | Comma-separated Telegram user IDs allowed by backend rules. |
-| `ADMIN_USERS` | No | Empty | Comma-separated Telegram user IDs with admin status. |
-| `CHAT_ID` | No | — | Legacy fallback Telegram chat ID. |
-| `BILLS_THREAD_ID` | No | — | Legacy fallback topic for new bills. |
-| `PAID_THREAD_ID` | No | — | Legacy fallback topic for payment confirmations. |
+| `VITE_BACKEND_URL` | No | `http://localhost:3000` in development | Browser-visible API URL compiled into a development admin build. |
+| `ALLOWED_USERS` | No | Empty (allow all new users) | Comma-separated Telegram IDs used to set `is_allowed` when a user is first registered. |
+| `ADMIN_USERS` | No | Empty | Comma-separated Telegram IDs used to set `is_admin` when a user is first registered. |
+| `CHAT_ID` | No | — | Legacy chat ID consumed by the unused `constant_payment` helper. |
+| `BILLS_THREAD_ID` | No | — | Fallback topic for new bills when the selected installation has no configured topic. |
+| `PAID_THREAD_ID` | No | — | Fallback topic for payment confirmations when the selected installation has no configured topic. |
 | `LOG` | No | `false` | Enables additional logging when set to `true`. |
 
 `VITE_BACKEND_URL` is used by the visitor's browser, so it must be reachable
 from that browser. A Docker-internal hostname such as `backend` will not work
-for users outside the Compose network.
+for users outside the Compose network. Vite replaces this value at build time,
+not when the container starts. The development Compose overlay supplies it to
+the Vite build; the prebuilt production image uses the value with which that
+image was published.
+
+`ALLOWED_USERS` and `ADMIN_USERS` do not overwrite existing database records on
+restart. Change an existing user's flags from the admin panel or API.
 
 ## Bot Commands
 
@@ -128,6 +134,7 @@ for users outside the Compose network.
 | `/delete` | Delete a registered bill. |
 | `/cancel` | Cancel the current operation. |
 | `/help` | Show the available commands. |
+| `/ia` | Display the bot's informational AI placeholder message. |
 
 To create a bill, a user must first be seen in a group or channel where the bot
 is present. The flow then asks for the target chat, bill details, amount, and
@@ -276,9 +283,11 @@ The schema is defined in `backend/src/db/schema.sql` and contains:
 - `bot_installation_topics`
 - `bot_installation_users`
 
-The backend applies the schema during startup. The development setup stores
-PostgreSQL data in the `postgres_data` Docker volume. To discard all local
-development data and rebuild the database, run:
+The backend applies the idempotent schema during every startup. PostgreSQL also
+runs the mounted schema automatically when it initializes an empty data
+directory. The development setup stores PostgreSQL data in the `postgres_data`
+Docker volume. To discard all local development data and rebuild the database,
+run:
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v
@@ -293,33 +302,36 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 
 ## Run Services Without Docker
 
-Use Node.js 20 or newer and start PostgreSQL separately. Set `DATABASE_URL` for
-the backend and use separate terminals for each service.
+Use Node.js 20.19 or newer (or Node.js 22.12 or newer) and start PostgreSQL
+separately. Set `DATABASE_URL` for the backend and use separate terminals for
+each service. Run `npm ci` in each directory for a reproducible install.
 
 ```bash
 # Backend
 cd backend
-npm install
+npm ci
 DATABASE_URL=postgres://telebot:password@localhost:5432/telebot npm run dev
 ```
 
 ```bash
 # Telegram bot
 cd tele_bot
-npm install
+npm ci
 BOT_TOKEN=your_token BACKEND_URL=http://localhost:3000 npm run dev
 ```
 
 ```bash
 # Admin panel
 cd admin_panel
-npm install
+npm ci
 VITE_BACKEND_URL=http://localhost:3000 npm run dev
 ```
 
-## Production
+## Deployment with Compose
 
-The production Compose file uses images published to GitHub Container Registry:
+The base Compose file uses prebuilt images from GitHub Container Registry. The
+current image tags are `:dev`, despite the services running with
+`NODE_ENV=production`:
 
 ```bash
 docker compose pull
@@ -328,6 +340,11 @@ docker compose ps
 ```
 
 The admin image is built with Vite and served by nginx on container port `80`.
+Its backend URL is fixed when the image is built; setting `VITE_BACKEND_URL` on
+the running production container does not change it. The PostgreSQL service
+bind-mounts `/Kojo/Docker/tele_bot_node/postgres`, so adjust that host path in
+`docker-compose.yml` before deploying on a different machine.
+
 To inspect a service, use `docker compose logs -f backend`, `tele_bot`, or
 `admin_panel`.
 
