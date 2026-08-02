@@ -44,6 +44,10 @@ function uniqueByTelegramId(users) {
   return uniqueUsers;
 }
 
+/**
+ * @param {Object} data - The data to resolve the responsible users.
+ * @return {Array|null} The responsible users or null.
+ */
 function explicitResponsibleUsers(data) {
   const explicit = data.responsibleUserIds || data.responsibleTelegramIds ||
     data.members;
@@ -65,6 +69,10 @@ function explicitResponsibleUsers(data) {
   return null;
 }
 
+/**
+ * @param {number|string} value - The value to parse as money.
+ * @return {number} The parsed money.
+ */
 function parseMoney(value) {
   if (typeof value === "number") {
     return value;
@@ -79,6 +87,10 @@ function parseMoney(value) {
   return Number.isFinite(amount) ? amount : 0;
 }
 
+/**
+ * @param {number|string} value - The value to parse as due date.
+ * @return {string} The parsed due date.
+ */
 function parseDueDate(value) {
   const text = String(value ?? "");
   const brazilianDate = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
@@ -90,6 +102,10 @@ function parseDueDate(value) {
   return text;
 }
 
+/**
+ * @param {Object} row - The row to map the agenda.
+ * @return {Object} The mapped agenda.
+ */
 function mapAgenda(row) {
   if (!row) {
     return row;
@@ -123,6 +139,11 @@ function mapAgenda(row) {
   };
 }
 
+/**
+ * @param {Object} data - The data to build the update.
+ * @param {Object} columnMap - The column map.
+ * @return {Object|null} The build update.
+ */
 function buildUpdate(data, columnMap) {
   const entries = Object.entries(data)
     .filter(([field]) =>
@@ -154,6 +175,12 @@ function buildUpdate(data, columnMap) {
   };
 }
 
+/**
+ * @param {Object} db - The database client.
+ * @param {Object} data - The data to resolve the responsible users.
+ * @param {Object} creator - The creator user.
+ * @return {Promise<Array>} The resolved responsible users.
+ */
 async function resolveResponsibleUsers(db, data, creator) {
   const explicitUsers = explicitResponsibleUsers(data);
   if (explicitUsers) {
@@ -203,6 +230,12 @@ async function resolveResponsibleUsers(db, data, creator) {
   return creator ? [creator] : [];
 }
 
+/**
+ * @param {Object} db - The database client.
+ * @param {number} telegramUserId - The Telegram user id.
+ * @param {number} chatId - The chat id.
+ * @return {Promise<boolean>} True if the user belongs to the chat, false otherwise.
+ */
 async function userBelongsToBotInstallationChat(db, telegramUserId, chatId) {
   const result = await db.query(
     `SELECT 1
@@ -220,6 +253,12 @@ async function userBelongsToBotInstallationChat(db, telegramUserId, chatId) {
   return result.rowCount > 0;
 }
 
+/**
+ * @param {Object} db - The database client.
+ * @param {number} telegramChatId - The Telegram chat id.
+ * @param {Array} users - The users to filter.
+ * @return {Promise<Array>} The filtered users.
+ */
 async function filterUsersByBotInstallationChatId(db, telegramChatId, users) {
   const telegramIds = uniqueByTelegramId(users).map((user) =>
     Number(user.telegram_id)
@@ -248,6 +287,11 @@ async function filterUsersByBotInstallationChatId(db, telegramChatId, users) {
   return result.rows;
 }
 
+/**
+ * @param {Object} db - The database client.
+ * @param {Object} data - The data to resolve the bank.
+ * @return {Promise<Object|null>} The resolved bank or null.
+ */
 async function resolveBank(db, data) {
   if (data.bankId) {
     const result = await db.query(
@@ -274,6 +318,11 @@ async function resolveBank(db, data) {
   return null;
 }
 
+/**
+ * @param {Object} db - The database client.
+ * @param {number} id - The id of the agenda.
+ * @return {Promise<Object|null>} The agenda row or null.
+ */
 async function getAgendaRow(db, id) {
   const result = await db.query(
     `SELECT
@@ -317,6 +366,7 @@ async function getAgendaRow(db, id) {
  * Inserts a new agenda payment.
  * @param {Object} data - The data to insert.
  * @param {Function} next - Callback called with the inserted agenda or false.
+ * @return {Promise<Object|boolean>} The inserted agenda or false.
  */
 async function insetAgendaPayment(data, next) {
   const db = await getClient();
@@ -441,7 +491,7 @@ async function insetAgendaPayment(data, next) {
 /**
  * Retrieves unpaid agenda payments by responsible Telegram user.
  * @param {number} senderId - The Telegram user id to search for.
- * @return {Promise<Array|boolean>} Matching agenda payments or false.
+ * @return {Promise<Array|{ error: string, status: number }>} The matching agenda payments or false.
  */
 async function getAllAgendaPaymentBySender(senderId) {
   try {
