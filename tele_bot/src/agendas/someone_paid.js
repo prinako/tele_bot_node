@@ -1,16 +1,11 @@
-// const {updateAgendaPayment, getAgendaPaymentById } = require('../api/backendClient.js');
-// const agendaFormatter = require('../utilities/agenda_formatter.js');
-// const allAgendaAsKeyboard = require('../utilities/all_agenda_as_keyboard.js');
-
+import agendaFormatter from "../utilities/agenda_formatter.js";
+import allAgendaAsKeyboard from "../utilities/all_agenda_as_keyboard.js";
+import getMemberName from "../utilities/get_member_name.js";
 import {
   getAgendaPaymentById,
   getBotInstallation,
   updateAgendaPayment,
 } from "../api/backendClient.js";
-import agendaFormatter, {
-  getAgendaMemberDisplayName,
-} from "../utilities/agenda_formatter.js";
-import allAgendaAsKeyboard from "../utilities/all_agenda_as_keyboard.js";
 
 class SomeonePaid {
   /**
@@ -76,7 +71,7 @@ class SomeonePaid {
     const memberButtons = this.members
       .filter((member) => member.isResponsible !== false)
       .map((member) => [{
-        text: `${getAgendaMemberDisplayName(member)} ${
+        text: `${getMemberName(member)} ${
           member.isPaid ? "✅" : "❌"
         }`,
         callback_data: `member_${member.telegramId}`,
