@@ -14,7 +14,7 @@ function cleanText(value) {
  * @returns {string} member name
  */
 export default function getMemberName(member = {}) {
-    comsole.log(member);
+    console.log("getMemberName", member);
     const username = cleanText(
     member.username ||
         member.telegramUsername ||
