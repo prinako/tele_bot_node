@@ -1,4 +1,4 @@
-import getMemberName from "./get_member_name";
+import getMemberName from "./get_member_name.js";
 
 /**
  * Checks if a member has paid.
