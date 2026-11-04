@@ -74,10 +74,12 @@ docker compose --env-file env_example -f docker-compose.yml -f docker-compose.de
 git diff --check
 ```
 
-Manifests currently provide `start`/`dev` for backend and bot, and `dev`/`build`/
-`preview` for the admin panel. No package defines `test`, `lint`, or `typecheck`;
-CI builds service images and publishes/signs them on eligible non-PR events.
-Do not claim these are passing tests or invent commands. If future work adds tests,
+Manifests provide `start`/`dev`/`test` for backend and bot, and `dev`/`build`/
+`preview` for the admin panel. Run `npm test --prefix backend` and
+`npm test --prefix tele_bot`. No package defines `lint` or `typecheck`.
+The checks workflow runs tests/frontend build; Docker CI builds service images
+and publishes/signs them on eligible non-PR events.
+Report build, unit and integration results separately. Do not invent commands. When extending tests,
 use the testing skill and test observable behavior with mocked Telegram/HTTP and an
 isolated disposable database. Never truncate or migrate a production database for tests.
 
@@ -118,18 +120,22 @@ path already satisfies them:
 
 ## Identity and permissions
 
-Current code stores `is_admin`/`is_allowed` and seeds new users from environment
-lists. The admin UI has no login and the Express app mounts routes without a
-central authentication middleware. Some repository paths check chat membership.
-Neither stored flags nor caller-supplied Telegram IDs establish authenticated identity.
+Authentication is implemented in `backend/src/security/`. Browser admins use a
+scrypt-verified password and a one-hour HttpOnly session. Bot calls use a separate
+service credential; an actor header is trusted only with that credential. Every
+delegated business request checks current stored flags; new ordinary users start
+blocked unless seeded in `ALLOWED_USERS` (admin seeds also start allowed).
 
-For future auth work, separate authentication (verified caller identity) from
-authorization (permission for this action/resource). Enforce permissions in the
-backend, including calls that bypass the bot/UI; hiding buttons is insufficient.
-Do not infer a full access policy from current flags, an unused helper, or existing
-endpoint behavior. Resolve who may create/edit/delete bills, view other users' PIX
-details, mark another member paid/unpaid, and override payments before implementing
-new restrictions. Also resolve bot-to-backend identity and admin login/trust boundaries.
+The selected permission policy: admins manage all resources; creators edit/delete
+their bills and confirm members' payments; responsible members can update only
+their own payment state. Standalone PIX keys are owner-scoped. Recorded group
+members can read bills posted to that group. Registration/scheduler service
+exceptions are explicit in the authorization middleware. See `docs/security.md`.
+
+Preserve backend enforcement, cookie Origin/CSRF checks, login throttling, and
+fail-closed configuration. Test denied direct API calls as well as bot/UI paths.
+Never accept a browser-supplied Telegram ID as authenticated identity. Resolve
+new business-policy questions before extending permissions.
 
 ## Reminder and conversation requirements
 
@@ -165,5 +171,6 @@ images and `/Kojo/Docker/tele_bot_node/postgres`; development overlays use sourc
 mounts and named dependency/data volumes. Changes must account for the merged
 Compose files and existing home-lab data. Never use `down -v`, move host data,
 change the database major version, or publish/deploy as an incidental check.
-The admin production image serves static Vite output through nginx; its browser
-API URL is determined at build time and must be reachable from the browser.
+The admin production image serves static Vite output through nginx with a same-origin
+`/api/` proxy to the backend. An optional browser API URL override is determined at
+build time and must be reachable from the browser. Never embed service secrets.
