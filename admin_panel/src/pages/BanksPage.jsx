@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createBank, getBanks, updateBank } from "../api/backendClient.js";
-import Form from "../components/Form.js";
-import Table from "../components/Table.js";
+import Form from "../components/Form.jsx";
+import Table from "../components/Table.jsx";
 
 const emptyBank = { name: "", isActive: true, sortOrder: 100 };
 

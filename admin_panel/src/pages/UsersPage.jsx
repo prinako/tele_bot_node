@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getUsers, updateUser } from "../api/backendClient.js";
-import Table from "../components/Table.js";
+import Table from "../components/Table.jsx";
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
