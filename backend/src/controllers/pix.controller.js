@@ -6,7 +6,7 @@ async function create(req, res, next) {
     if (result?.error) {
       return res.status(result.returnData?.code === "23505" ? 409 : 400).json({
         error: "PIX could not be registered",
-        details: result.returnData?.message,
+        details: "Check PIX and bank details",
         code: result.returnData?.code,
       });
     }
@@ -36,7 +36,7 @@ async function patch(req, res, next) {
     if (result?.error) {
       return res.status(400).json({
         error: "PIX could not be updated",
-        details: result.returnData?.message,
+        details: "Check PIX and bank details",
         code: result.returnData?.code,
       });
     }

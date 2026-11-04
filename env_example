@@ -14,3 +14,12 @@ PAID_THREAD_ID=
 CHAT_ID=
 
 LOG=false
+
+# Required: independent random bot service credential (32+ characters).
+BOT_API_TOKEN=
+# Required: generated with backend/scripts/hash-password.js; never the raw password.
+ADMIN_PASSWORD_HASH=
+# Exact browser origins. For HTTPS deployment, use your admin panel origin.
+CORS_ORIGINS=http://localhost:3001,http://localhost:5173
+# Local HTTP development only. Set true with HTTPS in production.
+COOKIE_SECURE=false

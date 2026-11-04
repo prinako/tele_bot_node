@@ -12,7 +12,7 @@ function isActive(route, href) {
   return itemRoute === "/" ? route === "/" : route.startsWith(itemRoute);
 }
 
-export default function Layout({ route, children }) {
+export default function Layout({ route, children, onLogout }) {
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -34,6 +34,7 @@ export default function Layout({ route, children }) {
             </a>
           ))}
         </nav>
+        <button onClick={onLogout}>Sign out</button>
       </aside>
       <main className="main">{children}</main>
     </div>

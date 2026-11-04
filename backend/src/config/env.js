@@ -9,6 +9,10 @@ const env = {
     allowedUsers: process.env.ALLOWED_USERS || '',
     adminUsers: process.env.ADMIN_USERS || '',
     log: process.env.LOG === 'true',
+    botApiToken: process.env.BOT_API_TOKEN || '',
+    adminPasswordHash: process.env.ADMIN_PASSWORD_HASH || '',
+    cookieSecure: process.env.COOKIE_SECURE !== 'false',
+    corsOrigins: (process.env.CORS_ORIGINS || '').split(',').map(v => v.trim()).filter(Boolean),
 };
 
 export default env;
