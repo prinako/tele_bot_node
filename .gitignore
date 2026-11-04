@@ -132,3 +132,6 @@ dist
 log.*
 
 /src/allowed_users/*.json
+
+# Downloaded project-local agent skills (restore with scripts/setup-skills.sh)
+/.agents/skills/
