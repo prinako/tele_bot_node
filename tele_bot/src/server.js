@@ -5,7 +5,8 @@ import SchedulesEveryday from "./schedules/schedules_everyday.js";
 import Paid from "./agendas/paid.js";
 import Pix from "./agendas/add_pix_to_db.js";
 import DeleteAgenda from "./agendas/delete_agenda.js";
-import { registerTelegramUserAndMembership } from "./utilities/registerTelegramUserAndMembership.js";
+import { createUserGuard } from "./auth/guard.js";
+import env from "./config/env.js";
 import { handleUserMessage } from "./handlers/handleUserMessage.js";
 import {
   agendaUsersState,
@@ -20,72 +21,31 @@ import {
  *
  * @returns {TelegramBot} The bot instance.
  */
+if (env.botApiToken.length < 32) throw new Error("BOT_API_TOKEN must contain at least 32 characters");
 const bot = createBot();
+function clearFlows(userId) {
+  for (const state of [agendaUsersState, deleteAgendaState, pagouState, paidState, pixState]) delete state[userId];
+}
+const guard = createUserGuard(bot, { clear: clearFlows });
+function onCommand(pattern, handler) { bot.onText(pattern, guard(handler)); }
 
 new SchedulesEveryday(bot);
 
-const trackedRegistrationMessages = new Set();
-
-/**
- * Generates a unique key for a Telegram registration message.
- *
- * @param {Object} msg - The Telegram message object.
- * @returns {string} The generated key.
- */
-function registrationKey(msg = {}) {
-  return [
-    msg.chat?.id || "no-chat",
-    msg.message_id || "no-message",
-    msg.from?.id || "no-from",
-  ].join(":");
-}
-
-/**
- * Registers a Telegram user and their membership in a bot installation.
- *
- * @param {Object} msg - The Telegram message object.
- */
-function trackTelegramUserAndMembership(msg) {
-  const key = registrationKey(msg);
-  if (trackedRegistrationMessages.has(key)) {
-    return;
-  }
-
-  trackedRegistrationMessages.add(key);
-  if (trackedRegistrationMessages.size > 1000) {
-    trackedRegistrationMessages.clear();
-  }
-
-  void registerTelegramUserAndMembership(msg).catch((error) => {
-    console.error("Failed to register Telegram user/membership:", error);
-  });
-}
-
-bot.onText(/\/cancel/, (msg) => {
-  trackTelegramUserAndMembership(msg);
+onCommand(/\/cancel/, (msg) => {
   if (!msg.from?.id) {
     return;
   }
 
   const userId = msg.from.id;
 
-  if (agendaUsersState[userId]) {
-    delete agendaUsersState[userId];
-  }
-  if (paidState[userId]) {
-    delete paidState[userId];
-  }
-  if (pixState[userId]) {
-    delete pixState[userId];
-  }
+  clearFlows(userId);
   bot.sendMessage(msg.chat.id, "Operação cancelada", {
     message_thread_id: msg.message_thread_id,
   });
 });
 
 // Command /start to initiate the month selection
-bot.onText(/\/start/, (msg) => {
-  trackTelegramUserAndMembership(msg);
+onCommand(/\/start/, (msg) => {
 
   const chatId = msg.chat.id;
   bot.sendMessage(chatId, "Please use /agenda to start the process.", {
@@ -94,8 +54,7 @@ bot.onText(/\/start/, (msg) => {
 });
 
 // Command /agenda to initiate the month selection
-bot.onText(/\/agenda/, async (msg) => {
-  trackTelegramUserAndMembership(msg);
+onCommand(/\/agenda/, async (msg) => {
   if (!msg.from?.id) {
     return;
   }
@@ -112,7 +71,7 @@ bot.onText(/\/agenda/, async (msg) => {
       delete agendaUsersState[userId];
     }
   } catch (error) {
-    console.error("Failed to start agenda flow:", error);
+    console.error("Failed to start agenda flow:", { code: error.code, status: error.status });
     delete agendaUsersState[userId];
     await bot.sendMessage(
       msg.chat.id,
@@ -122,8 +81,7 @@ bot.onText(/\/agenda/, async (msg) => {
   }
 });
 
-bot.onText(/\/help/, (msg) => {
-  trackTelegramUserAndMembership(msg);
+onCommand(/\/help/, (msg) => {
   if (!msg.from?.id) {
     return;
   }
@@ -139,8 +97,7 @@ bot.onText(/\/help/, (msg) => {
   );
 });
 
-bot.onText(/\/whopaid/, (msg) => {
-  trackTelegramUserAndMembership(msg);
+onCommand(/\/whopaid/, (msg) => {
   if (!msg.from?.id) {
     return;
   }
@@ -151,22 +108,20 @@ bot.onText(/\/whopaid/, (msg) => {
     paidState[userId] = {};
   }
   paidState[userId] = new SomeonePaid(bot);
-  paidState[userId].addWhoPaid(msg);
+  return paidState[userId].addWhoPaid(msg);
 });
 
-bot.onText(/\/pagou/, (msg) => {
-  trackTelegramUserAndMembership(msg);
+onCommand(/\/pagou/, (msg) => {
   if (!msg.from?.id) {
     return;
   }
 
   const userId = msg.from.id;
   pagouState[userId] = new Paid(bot);
-  pagouState[userId].paid(msg);
+  return pagouState[userId].paid(msg);
 });
 
-bot.onText(/\/registerpix/, (msg) => {
-  trackTelegramUserAndMembership(msg);
+onCommand(/\/registerpix/, (msg) => {
   if (!msg.from?.id) {
     return;
   }
@@ -174,11 +129,10 @@ bot.onText(/\/registerpix/, (msg) => {
   const userId = msg.from.id;
 
   pixState[userId] = new Pix(bot);
-  pixState[userId].addPix(msg);
+  return pixState[userId].addPix(msg);
 });
 
-bot.onText(/\/delete/, (msg) => {
-  trackTelegramUserAndMembership(msg);
+onCommand(/\/delete/, (msg) => {
   if (!msg.from?.id) {
     return;
   }
@@ -189,8 +143,7 @@ bot.onText(/\/delete/, (msg) => {
   deleteAgendaState[userId].deleteAgenda(msg);
 });
 
-bot.onText(/\/ia/, (msg) => {
-  trackTelegramUserAndMembership(msg);
+onCommand(/\/ia/, (msg) => {
 
   bot.sendMessage(
     msg.chat.id,
@@ -204,21 +157,15 @@ bot.onText(/\/ia/, (msg) => {
 });
 
 // Handle user responses
-bot.on("message", (msg) => {
-  trackTelegramUserAndMembership(msg);
-  handleUserMessage(bot, msg);
-});
+bot.on("message", guard((msg) => {
+  if (!msg.text?.startsWith("/")) handleUserMessage(bot, msg);
+}, { quiet: true }));
 
 // Handle callback queries
-bot.on("callback_query", async (callbackQuery) => {
-  if (callbackQuery.message) {
-    trackTelegramUserAndMembership({
-      ...callbackQuery.message,
-      from: callbackQuery.from,
-    });
-  }
-
+bot.on("callback_query", guard(async (callbackQuery) => {
   if (callbackQuery.data === "/cancel") {
+    clearFlows(callbackQuery.from.id);
+    await bot.answerCallbackQuery(callbackQuery.id);
     return;
   }
   // Get the user ID of the message
@@ -233,12 +180,13 @@ bot.on("callback_query", async (callbackQuery) => {
     }
   }
   if (paidState[userId]) {
-    paidState[userId].handlePaid(callbackQuery);
+    await paidState[userId].handlePaid(callbackQuery);
   }
   if (pixState[userId]) {
-    pixState[userId].handlePix(callbackQuery);
+    await pixState[userId].handlePix(callbackQuery);
   }
   if (pagouState[userId]) {
-    pagouState[userId].handlePaid(callbackQuery);
+    await pagouState[userId].handlePaid(callbackQuery);
   }
-});
+  await bot.answerCallbackQuery(callbackQuery.id).catch(() => {});
+}, { callback: true }));

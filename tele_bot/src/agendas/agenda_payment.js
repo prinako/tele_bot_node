@@ -383,7 +383,7 @@ class AgendaPayment {
   async sendFinalSummary(chatId, messageThreadId, userId, user = {}) {
     const installation = await getBotInstallation(this.selectedChatId).catch(
       (error) => {
-        console.error(error);
+        console.error("Operation failed", { code: error.code, status: error.status });
         return null;
       },
     );
@@ -420,7 +420,6 @@ class AgendaPayment {
         );
         return true;
       }
-      console.log(isInseted);
       
       const paymentSummary = agendaFormatter(isInseted);
       // Send the summary message
@@ -486,7 +485,7 @@ class AgendaPayment {
         this.selectedAmount = userText;
         void this.showMemberPicker(chatId, messageThreadId, userId).catch(
           async (error) => {
-            console.error(error);
+            console.error("Operation failed", { code: error.code, status: error.status });
             await this.bot.sendMessage(
               chatId,
               "Não consegui carregar os membros agora. Tente novamente em alguns instantes.",
@@ -760,7 +759,7 @@ class AgendaPayment {
       const bankBtns = await generateBankKeyboard();
       return this.showBankPicker(bankBtns);
     } catch (error) {
-      console.error(error);
+      console.error("Operation failed", { code: error.code, status: error.status });
       return this.showBankPickerError();
     }
   }

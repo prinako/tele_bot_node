@@ -478,7 +478,7 @@ async function insetAgendaPayment(data, next) {
     return next(mapAgenda(inserted));
   } catch (err) {
     await db.query("ROLLBACK");
-    console.log(err);
+    console.error("Database operation failed", { code: err.code });
     if (err.status) {
       return next({ error: err.message, status: err.status });
     }
@@ -501,7 +501,7 @@ async function getAllAgendaPaymentBySender(senderId) {
              JOIN users creator ON creator.id = ap.created_by_user_id
              LEFT JOIN agenda_payment_members apm ON apm.agenda_payment_id = ap.id
              LEFT JOIN users member_user ON member_user.id = apm.user_id
-             WHERE creator.telegram_id = $1
+             WHERE (creator.telegram_id = $1 OR (member_user.telegram_id = $1 AND apm.is_responsible = TRUE))
               AND ap.is_fully_paid = FALSE
              ORDER BY ap.created_at ASC`,
       [senderId],
@@ -512,41 +512,11 @@ async function getAllAgendaPaymentBySender(senderId) {
     );
     return rows.filter(Boolean);
   } catch (error) {
-    console.error("Error occurred during query:", error);
+    console.error("Error occurred during query:", { code: error.code, status: error.status });
     return false;
   }
 }
 
-
-// async function getAllAgendaPaymentBySender(senderId) {
-//   try {
-//     const result = await query(
-//       `SELECT DISTINCT ap.id, ap.created_at
-//              FROM agenda_payments ap
-//              JOIN users creator ON creator.id = ap.created_by_user_id
-//              LEFT JOIN agenda_payment_members apm ON apm.agenda_payment_id = ap.id
-//              LEFT JOIN users member_user ON member_user.id = apm.user_id
-//              WHERE (
-//                 creator.telegram_id = $1
-//                 OR (
-//                     member_user.telegram_id = $1
-//                     AND apm.is_responsible = TRUE
-//                 )
-//              )
-//                AND ap.is_fully_paid = FALSE
-//              ORDER BY ap.created_at ASC`,
-//       [senderId],
-//     );
-
-//     const rows = await Promise.all(
-//       result.rows.map((row) => getAgendaPaymentById(row.id)),
-//     );
-//     return rows.filter(Boolean);
-//   } catch (error) {
-//     console.error("Error occurred during query:", error);
-//     return false;
-//   }
-// }
 
 /**
  * Retrieves all unpaid agenda payments.
@@ -566,7 +536,7 @@ async function getAllAgendaPayment(next) {
     );
     return next(rows.filter(Boolean));
   } catch (err) {
-    console.log(err);
+    console.error("Database operation failed", { code: err.code });
     return next(false);
   }
 }
@@ -588,7 +558,7 @@ async function getAgendaPaymentById(id) {
   try {
     return mapAgenda(await getAgendaRow({ query }, id)) || false;
   } catch (error) {
-    console.error("Error occurred during query:", error);
+    console.error("Error occurred during query:", { code: error.code, status: error.status });
     return false;
   }
 }
@@ -618,7 +588,7 @@ async function deleteAgendaPayment(id) {
     return mapAgenda(row) || false;
   } catch (error) {
     await db.query("ROLLBACK");
-    console.error("Error occurred during query:", error);
+    console.error("Error occurred during query:", { code: error.code, status: error.status });
     return false;
   } finally {
     db.release();
@@ -729,7 +699,7 @@ async function updateAgendaPayment(id, data, senderId = null) {
     return mapAgenda(updatedAgenda) || false;
   } catch (error) {
     await db.query("ROLLBACK");
-    console.error("Error occurred during query:", error);
+    console.error("Error occurred during query:", { code: error.code, status: error.status });
     return false;
   } finally {
     db.release();

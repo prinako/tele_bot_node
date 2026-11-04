@@ -1,4 +1,5 @@
 import env from "../config/env.js";
+import { currentTelegramUser } from "../auth/context.js";
 
 const baseUrl = env.backendUrl.replace(/\/$/, "");
 
@@ -8,6 +9,8 @@ async function request(path, options = {}) {
     headers: {
       "Content-Type": "application/json",
       ...(options.headers || {}),
+      Authorization: `Bearer ${env.botApiToken}`,
+      ...(currentTelegramUser() && { "X-Telegram-User-Id": currentTelegramUser() }),
     },
   });
 
@@ -22,6 +25,10 @@ async function request(path, options = {}) {
   }
 
   return data;
+}
+
+export async function getCurrentUser() {
+  return request("/api/auth/me");
 }
 
 async function upsertUser(user) {
@@ -160,7 +167,7 @@ function insetAgendaPayment(data, next) {
   createAgendaPayment(data)
     .then((agenda) => next(agenda))
     .catch((error) => {
-      console.error(error);
+      console.error("Operation failed", { code: error.code, status: error.status });
       next(false);
     });
 }
@@ -169,7 +176,7 @@ function getAllAgendaPayment(next) {
   getAllAgendaPayments()
     .then((agendas) => next(agendas))
     .catch((error) => {
-      console.error(error);
+      console.error("Operation failed", { code: error.code, status: error.status });
       next(false);
     });
 }
@@ -178,7 +185,7 @@ async function getAllAgendaPaymentBySender(senderId) {
   try {
     return await getAgendaPaymentsByUser(senderId);
   } catch (error) {
-    console.error(error);
+    console.error("Operation failed", { code: error.code, status: error.status });
     return false;
   }
 }
@@ -188,7 +195,7 @@ async function insetPix(data, next) {
     const pix = await registerPix(data);
     return next({ error: false, returnData: pix });
   } catch (error) {
-    console.error(error);
+    console.error("Operation failed", { code: error.code, status: error.status });
     return next({ error: true, returnData: error.data || error });
   }
 }
@@ -197,7 +204,7 @@ function updatePixWithCallback(id, data, next) {
   updatePix(id, data)
     .then((pix) => next(pix))
     .catch((error) => {
-      console.error(error);
+      console.error("Operation failed", { code: error.code, status: error.status });
       next(false);
     });
 }
