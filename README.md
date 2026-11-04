@@ -354,6 +354,34 @@ Contributions are welcome. Fork the repository, create a focused branch, and
 open a pull request describing the motivation, behavior change, and how you
 tested it. Keep credentials and local `.env` files out of commits.
 
+### Project-local agent skills
+
+Read [AGENTS.md](AGENTS.md) for project conventions and the mapping of the six
+skills to backend, authentication, testing, PostgreSQL, Docker, and React work.
+Downloaded bundles in `.agents/skills/` are ignored by Git. After cloning, install
+Node.js/npm and Git, then run:
+
+```bash
+bash scripts/setup-skills.sh
+```
+
+The script can be called from any directory. It uses skills CLI `1.7.6` to restore
+only the six selections in `skills-lock.json` at project scope. It requires network
+access, skips existing bundles, and refuses to change the lockfile if upstream
+content differs. Preview missing downloads with:
+
+```bash
+bash scripts/setup-skills.sh --dry-run
+```
+
+Keep the setup script and `skills-lock.json` in source control. The lockfile records
+sources, skill paths and hashes, not immutable Git commits; if restoration reports
+upstream drift, review the new content before explicitly updating the lockfile.
+Codex discovers `.agents/skills/` on the next turn. Inspect the relevant `SKILL.md`,
+references and any bundled scripts before using them. No global install is needed;
+`telegram-bots` is excluded. The upstream React compiled guide's three broken
+relative cross-links have a workaround documented in [AGENTS.md](AGENTS.md).
+
 ## License
 
 Distributed under the [MIT License](LICENSE).
