@@ -66,7 +66,7 @@ class paid {
 
       const installation = await getBotInstallation(updateAgenda.chatId).catch(
         (error) => {
-          console.error(error);
+          console.error("Operation failed", { code: error.code, status: error.status });
           return null;
         },
       );

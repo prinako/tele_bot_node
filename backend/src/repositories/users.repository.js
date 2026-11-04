@@ -23,7 +23,7 @@ function userPayloadFromData(data = {}) {
       lastName: source.last_name ?? source.lastName ?? data.lastName,
       username: source.username ?? data.username,
       telegramId,
-    }),
+    }) || null,
   };
 }
 
@@ -104,7 +104,7 @@ async function upsertUser(db, data = {}) {
       user.lastName,
       user.displayName,
       adminTelegramIds().includes(Number(user.telegramId)),
-      allowedIds.length === 0 || allowedIds.includes(Number(user.telegramId)),
+      allowedIds.includes(Number(user.telegramId)) || adminTelegramIds().includes(Number(user.telegramId)),
     ],
   );
 
@@ -154,7 +154,8 @@ async function getUserByTelegramId(telegramId) {
 }
 
 async function getUsersByTelegramIds(telegramIds) {
-  return mapUser(await findUserByTelegramId({ query }, telegramId));
+  const ids = Array.isArray(telegramIds) ? telegramIds : String(telegramIds).split(",");
+  return (await findUsersByTelegramIds({ query }, ids)).map(mapUser);
 }
 
 async function getAllUsers() {

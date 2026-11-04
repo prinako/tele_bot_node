@@ -108,7 +108,7 @@ class AddPixToDB {
         },
       );
     } catch (error) {
-      console.error(error);
+      console.error("Operation failed", { code: error.code, status: error.status });
       this.bot.sendMessage(
         msg.chat.id,
         "Não consegui carregar a lista de bancos agora. Tente novamente em alguns instantes.",
@@ -129,7 +129,6 @@ class AddPixToDB {
     const userId = msg.from.id;
     const data = callbackQuery.data;
     const messageThreadId = msg.message_thread_id;
-    console.log(data);
 
     if (data.startsWith("bank_")) {
       this.isStagePixChave = true;
@@ -154,7 +153,6 @@ class AddPixToDB {
     const userText = msg.text;
     const messageThreadId = msg.message_thread_id;
 
-    console.log(userText);
     if (userText === "/cancel") {
       return true;
     }
@@ -183,7 +181,6 @@ class AddPixToDB {
   async insetPixToDB(data, userId, messageThreadId) {
     // Insert the document into the collection
     await insetPix(data, (result) => {
-      console.log(result);
       if (result.error) {
         const errorCode = result.returnData?.code;
 

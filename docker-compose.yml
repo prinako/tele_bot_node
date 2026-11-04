@@ -9,6 +9,10 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
+      BOT_API_TOKEN: ${BOT_API_TOKEN}
+      ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
       DATABASE_URL: postgres://telebot:${POSTGRES_PASSWORD:-telebot}@postgres:5432/telebot
       ALLOWED_USERS: ${ALLOWED_USERS}
       ADMIN_USERS: ${ADMIN_USERS}
@@ -28,6 +32,7 @@ services:
     environment:
       NODE_ENV: production
       BOT_TOKEN: ${BOT_TOKEN}
+      BOT_API_TOKEN: ${BOT_API_TOKEN}
       BACKEND_URL: http://backend:3000
       BILLS_THREAD_ID: ${BILLS_THREAD_ID}
       PAID_THREAD_ID: ${PAID_THREAD_ID}

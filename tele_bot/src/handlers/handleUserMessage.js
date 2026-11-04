@@ -23,8 +23,8 @@ function handleGreeting(bot, msg, text) {
       sendGreeting(bot, msg, text);
     }
   } catch (error) {
-    if (process.env.LOG) {
-      console.error(error);
+    if (process.env.LOG === "true") {
+      console.error("Operation failed", { code: error.code, status: error.status });
     }
   }
 }
@@ -69,9 +69,6 @@ function handlePixResponse(userId, msg) {
 export function handleUserMessage(bot, msg) {
   const text = msg.text;
 
-  if (process.env.LOG) {
-    console.debug(msg);
-  }
 
   if (!text || text === "/cancel" || !msg.from?.id) {
     return;

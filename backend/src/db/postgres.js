@@ -7,7 +7,7 @@ const pool = new Pool({
 });
 
 pool.on("error", (err) => {
-  console.error("Unexpected PostgreSQL pool error:", err);
+  console.error("Unexpected PostgreSQL pool error:", { code: err.code, status: err.status });
 });
 
 async function query(text, params = []) {

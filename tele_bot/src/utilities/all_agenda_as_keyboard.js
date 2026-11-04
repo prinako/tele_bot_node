@@ -17,7 +17,6 @@ async function allAgendaAsKeyboard(userID, name) {
         const result = await getAllAgendaPaymentBySender(userID);
         
         // Log the result for debugging purposes
-        console.log(result);
         
         // Return false if no results were found or the result is falsy
         if (!result || result.length === 0) {

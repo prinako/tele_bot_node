@@ -52,7 +52,7 @@ async function registerBotInstallation(msg) {
 
     return installation;
   } catch (error) {
-    console.error("Failed to register bot installation", error);
+    console.error("Failed to register bot installation", { code: error.code, status: error.status });
     return null;
   }
 }

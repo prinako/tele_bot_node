@@ -1,12 +1,8 @@
-const BACKEND_URL =
-  import.meta.env.VITE_BACKEND_URL ||
-  "https://api-telebot.home.prinako.online";
-
-// const BACKEND_URL = "https://api-telebot.home.prinako.online";
-
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "";
 
 async function request(path, options = {}) {
   const response = await fetch(`${BACKEND_URL}${path}`, {
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(options.headers || {}),
@@ -17,6 +13,7 @@ async function request(path, options = {}) {
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
+    if (response.status === 401) window.dispatchEvent(new Event("auth-required"));
     throw new Error(data?.error || `Request failed: ${response.status}`);
   }
 
@@ -130,3 +127,9 @@ export function markAgendaMemberUnpaid(id, telegramId) {
     method: "PATCH",
   });
 }
+
+export function login(password) {
+  return request("/api/auth/login", { method: "POST", body: body({ password }) });
+}
+export function getSession() { return request("/api/auth/me"); }
+export function logout() { return request("/api/auth/logout", { method: "POST" }); }

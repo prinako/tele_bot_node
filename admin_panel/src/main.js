@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 
+import LoginPage from "./pages/LoginPage.jsx";
+import { getSession, logout } from "./api/backendClient.js";
+
 import Layout from "./components/Layout.js";
 import AgendaDetailsPage from "./pages/AgendaDetailsPage.js";
 import AgendaPage from "./pages/AgendaPage.js";
@@ -18,12 +21,28 @@ function currentRoute() {
 
 function App() {
   const [route, setRoute] = useState(currentRoute());
+  const [user, setUser] = useState(null);
+  const [checking, setChecking] = useState(true);
+  const [sessionError, setSessionError] = useState("");
+  useEffect(() => {
+    const expired = () => setUser(null);
+    window.addEventListener("auth-required", expired);
+    getSession().then(setUser).catch(() => setUser(null)).finally(() => setChecking(false));
+    return () => window.removeEventListener("auth-required", expired);
+  }, []);
+  async function signOut() {
+    try { await logout(); setUser(null); }
+    catch (error) { setSessionError(error.message); }
+  }
 
   useEffect(() => {
     const listener = () => setRoute(currentRoute());
     window.addEventListener("hashchange", listener);
     return () => window.removeEventListener("hashchange", listener);
   }, []);
+
+  if (checking) return <main className="main">Checking session…</main>;
+  if (!user) return <LoginPage onLogin={setUser} />;
 
   let page = <DashboardPage />;
   if (route === "/users") {
@@ -46,7 +65,7 @@ function App() {
     );
   }
 
-  return <Layout route={route}>{page}</Layout>;
+  return <Layout route={route} onLogout={signOut}>{sessionError && <div className="alert">{sessionError}</div>}{page}</Layout>;
 }
 
 createRoot(document.getElementById("root")).render(<App />);

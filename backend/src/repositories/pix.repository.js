@@ -118,7 +118,7 @@ async function insetPix(data, next) {
     });
   } catch (error) {
     await db.query("ROLLBACK");
-    console.log(error);
+    console.error("Database operation failed", { code: error.code });
     return next({ error: true, returnData: error });
   } finally {
     db.release();
@@ -143,7 +143,7 @@ async function getUserPixBySenderBank(senderId, bank) {
 
     return result.rows.map(mapPix);
   } catch (error) {
-    console.error("Error occurred during query:", error);
+    console.error("Error occurred during query:", { code: error.code, status: error.status });
     return false;
   }
 }
@@ -243,7 +243,7 @@ async function updatePix(id, data, next) {
     return next(mapPix(result.rows[0]) || false);
   } catch (err) {
     await db.query("ROLLBACK");
-    console.log(err);
+    console.error("Database operation failed", { code: err.code });
     return next(false);
   } finally {
     db.release();

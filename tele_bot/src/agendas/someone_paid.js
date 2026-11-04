@@ -3,6 +3,7 @@ import allAgendaAsKeyboard from "../utilities/all_agenda_as_keyboard.js";
 import getMemberName from "../utilities/get_member_name.js";
 import {
   getAgendaPaymentById,
+  getCurrentUser,
   getBotInstallation,
   updateAgendaPayment,
 } from "../api/backendClient.js";
@@ -39,6 +40,8 @@ class SomeonePaid {
    * @return {Promise<void>}
    */
   async addWhoPaid(msg) {
+    this.actorId = msg.from.id;
+    this.isAdmin = (await getCurrentUser()).role === "admin";
     await this.getAllAgendasKeyboard(msg);
   }
 
@@ -126,7 +129,7 @@ class SomeonePaid {
 
       const installation = await getBotInstallation(updateAgenda.chatId).catch(
         (error) => {
-          console.error(error);
+          console.error("Operation failed", { code: error.code, status: error.status });
           return null;
         },
       );
@@ -161,7 +164,9 @@ class SomeonePaid {
 
       const result = await getAgendaPaymentById(this.selectedAgendaId);
       if (result) {
-        this.members = result.members;
+        this.members = this.isAdmin || Number(result.senderId) === Number(this.actorId)
+          ? result.members
+          : result.members.filter((member) => Number(member.telegramId) === Number(this.actorId));
         this.resend(msg);
       }
       return;

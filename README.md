@@ -9,6 +9,8 @@ A Telegram bot for organizing shared bills, tracking who has paid, and managing
 PIX payment details. It includes a REST API, a PostgreSQL database, and a React
 admin dashboard for managing the system from a browser.
 
+Documentation: [Getting started](docs/getting-started.md) · [Architecture](docs/architecture.md) · [Configuration](docs/configuration.md) · [Security](docs/security.md) · [API](docs/api.md) · [Development](docs/development.md)
+
 ## Highlights
 
 - Create bills and split them between members of a Telegram group or channel.
@@ -21,16 +23,13 @@ admin dashboard for managing the system from a browser.
 
 ## Architecture
 
-```text
-                         ┌─────────────────┐
-Telegram ── polling ───▶ │  Telegram Bot   │
-                         └────────┬────────┘
-                                  │ HTTP
-                                  ▼
-┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
-│  Admin Panel    │ ───▶ │  Express API    │ ───▶ │   PostgreSQL    │
-│  React + Vite   │ HTTP │  Node.js        │      │                 │
-└─────────────────┘      └─────────────────┘      └─────────────────┘
+```mermaid
+flowchart TD
+  Telegram["Telegram"] <--> Bot["Polling bot"]
+  Bot -->|"Service credential + sender"| API["Express API"]
+  Browser["Admin browser"] -->|"Session cookie"| Panel["React + nginx"]
+  Panel -->|"/api proxy"| API
+  API --> Postgres["PostgreSQL"]
 ```
 
 | Service | Responsibility | Default port |
@@ -67,7 +66,10 @@ neither accesses PostgreSQL directly.
    cp env_example .env
    ```
 
-3. Set at least `BOT_TOKEN` and `POSTGRES_PASSWORD` in `.env`.
+3. Set `BOT_TOKEN`, `POSTGRES_PASSWORD`, `BOT_API_TOKEN`, `ADMIN_PASSWORD_HASH`,
+   `CORS_ORIGINS`, and your Telegram seed IDs in `.env`. Follow the
+   [credential generation steps](docs/getting-started.md#credentials).
+   For local HTTP development use `COOKIE_SECURE=false`; production requires HTTPS.
 
 4. Build and start the development stack:
 
@@ -99,13 +101,17 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml down
 | Variable | Required | Default | Description |
 | --- | :---: | --- | --- |
 | `BOT_TOKEN` | Yes | — | Telegram token issued by BotFather. |
+| `BOT_API_TOKEN` | Yes | — | Separate backend/bot service secret, at least 32 characters. |
+| `ADMIN_PASSWORD_HASH` | Yes | — | scrypt hash from `backend/scripts/hash-password.js`. |
+| `CORS_ORIGINS` | Yes | — | Exact browser origins allowed to authenticate and write. |
+| `COOKIE_SECURE` | No | `true` | Secure cookie; production requires true and HTTPS origins. |
 | `POSTGRES_PASSWORD` | No | `telebot` | Password for the `telebot` database user. Set a strong value outside local development. |
 | `BACKEND_PORT` | No | `3000` | Backend port exposed on the host. |
 | `BACKEND_URL` | No | `http://localhost:3000` outside Compose | API URL used by the bot. Both Compose files set it to `http://backend:3000`. |
 | `ADMIN_PANEL_PORT` | No | `3001` | Admin panel port exposed on the host. |
 | `ADMINER_PORT` | No | `8080` | Adminer port exposed on the host. |
 | `VITE_BACKEND_URL` | No | `http://localhost:3000` in development | Browser-visible API URL compiled into a development admin build. |
-| `ALLOWED_USERS` | No | Empty (allow all new users) | Comma-separated Telegram IDs used to set `is_allowed` when a user is first registered. |
+| `ALLOWED_USERS` | No | Empty (block new ordinary users) | Comma-separated Telegram IDs used to set `is_allowed` when a user is first registered. |
 | `ADMIN_USERS` | No | Empty | Comma-separated Telegram IDs used to set `is_admin` when a user is first registered. |
 | `CHAT_ID` | No | — | Legacy chat ID consumed by the unused `constant_payment` helper. |
 | `BILLS_THREAD_ID` | No | — | Fallback topic for new bills when the selected installation has no configured topic. |
@@ -119,6 +125,7 @@ not when the container starts. The development Compose overlay supplies it to
 the Vite build; the prebuilt production image uses the value with which that
 image was published.
 
+`ADMIN_USERS` also allows those IDs at first registration.
 `ALLOWED_USERS` and `ADMIN_USERS` do not overwrite existing database records on
 restart. Change an existing user's flags from the admin panel or API.
 
@@ -131,7 +138,7 @@ restart. Change an existing user's flags from the admin panel or API.
 | `/pagou` | Mark a member's share as paid. |
 | `/whopaid` | View payment status for a bill. |
 | `/registerpix` | Register a PIX key. |
-| `/delete` | Delete a registered bill. |
+| `/delete` | Placeholder; use the admin panel/API to delete a bill. |
 | `/cancel` | Cancel the current operation. |
 | `/help` | Show the available commands. |
 | `/ia` | Display the bot's informational AI placeholder message. |
@@ -155,12 +162,14 @@ In **Groups & Channels → Chat Details → Settings**, an admin can choose whic
 known topic receives new bills and which receives payment confirmations.
 
 > [!WARNING]
-> The admin panel currently has no authentication. Keep it on a trusted network,
-> behind a VPN, or behind an authenticated reverse proxy.
+> The admin panel requires a password login. Production requires HTTPS.
+> Keep backend/Adminer ports restricted; see [security](docs/security.md).
 
 ## API Reference
 
-The API returns JSON. Its main routes are grouped below.
+The API returns JSON. Protected routes require an admin session or the bot service
+credential with an authorized acting user. See [API access](docs/api.md) for
+authentication and route permissions. Its main routes are grouped below.
 
 <details>
 <summary><strong>Health and administration</strong></summary>
@@ -310,6 +319,7 @@ each service. Run `npm ci` in each directory for a reproducible install.
 # Backend
 cd backend
 npm ci
+# Export required auth configuration first; see docs/getting-started.md.
 DATABASE_URL=postgres://telebot:password@localhost:5432/telebot npm run dev
 ```
 
@@ -317,7 +327,8 @@ DATABASE_URL=postgres://telebot:password@localhost:5432/telebot npm run dev
 # Telegram bot
 cd tele_bot
 npm ci
-BOT_TOKEN=your_token BACKEND_URL=http://localhost:3000 npm run dev
+# Export BOT_TOKEN and BOT_API_TOKEN first.
+BACKEND_URL=http://localhost:3000 npm run dev
 ```
 
 ```bash
@@ -340,8 +351,9 @@ docker compose ps
 ```
 
 The admin image is built with Vite and served by nginx on container port `80`.
-Its backend URL is fixed when the image is built; setting `VITE_BACKEND_URL` on
-the running production container does not change it. The PostgreSQL service
+The production panel uses same-origin `/api/` requests through nginx. An optional
+`VITE_BACKEND_URL` override is fixed at build time; setting it on the running
+production container does not change static assets. The PostgreSQL service
 bind-mounts `/Kojo/Docker/tele_bot_node/postgres`, so adjust that host path in
 `docker-compose.yml` before deploying on a different machine.
 
