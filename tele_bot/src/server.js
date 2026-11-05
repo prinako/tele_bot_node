@@ -3,7 +3,11 @@ import env from "./config/env.js";
 import { createTelegramIntegration, logBotError } from "./integration.js";
 import { runBot } from "./lifecycle.js";
 
-export async function main({ config = env, createIntegration = createTelegramIntegration, run = runBot } = {}) {
+export async function main({ 
+  config = env, 
+  createIntegration = createTelegramIntegration, 
+  run = runBot 
+} = {}) {
   if (config.botApiToken.length < 32) throw new Error("BOT_API_TOKEN must contain at least 32 characters");
   if (!config.botToken) throw new Error("BOT_TOKEN is required");
   await run(createIntegration({ token: config.botToken }));
