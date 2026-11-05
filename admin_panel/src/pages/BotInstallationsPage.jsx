@@ -5,11 +5,13 @@ import Table from "../components/Table.jsx";
 export default function BotInstallationsPage() {
   const [installations, setInstallations] = useState([]);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getBotInstallations()
       .then(setInstallations)
-      .catch((err) => setError(err.message));
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
   }, []);
 
   return (
@@ -22,8 +24,9 @@ export default function BotInstallationsPage() {
           </p>
         </div>
       </header>
-      {error && <div className="alert">{error}</div>}
+      {error && <div className="alert" role="alert">{error}</div>}
       <Table
+        loading={loading}
         columns={[
           { key: "telegramChatId", label: "Telegram Chat ID" },
           { key: "chatType", label: "Type" },
