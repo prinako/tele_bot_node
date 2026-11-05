@@ -1,6 +1,6 @@
 {
   "name": "tele-bot-backend",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "type": "module",
   "main": "src/server.js",
   "scripts": {
@@ -9,9 +9,9 @@
     "test": "node --test"
   },
   "dependencies": {
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
-    "express": "^5.2.1",
-    "pg": "^8.22.0"
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "pg": "^8.23.1"
   }
 }

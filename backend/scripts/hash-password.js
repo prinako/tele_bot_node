@@ -6,6 +6,6 @@ for await (const chunk of process.stdin) {
   if (password.length > 1024) throw new Error("Password too long");
 }
 password = password.replace(/\r?\n$/, "");
-if (password.length < 12) throw new Error("Use a password of at least 12 characters");
+if (password.length < 6) throw new Error("Use a password of at least 12 characters");
 const salt = randomBytes(16).toString("hex");
 console.log(`${salt}:${scryptSync(password, salt, 64).toString("hex")}`);

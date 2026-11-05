@@ -38,9 +38,9 @@ scripts that are not shipped in the installable skill; do not run those commands
   in-memory flow state, `schedules` uses `node-cron`, and `api/backendClient.js`
   calls the backend over HTTP. Several command/keyboard/message directories are
   documented extraction destinations, not completed architectural layers.
-- `admin_panel/`: React 19/Vite 7 SPA, pages and components, a shared HTTP client
-  and CSS. JSX exists in both `.js` and `.jsx`; `vite.config.js` explicitly
-  transforms source `.js` as JSX.
+- `admin_panel/`: React 19/Vite 8 SPA, pages and components, a shared HTTP client
+  and CSS. Files containing JSX use `.jsx`; plain JavaScript modules use `.js`.
+  Keep imports and the HTML entrypoint aligned with these extensions.
 - All three packages use JavaScript ESM (`"type": "module"`), explicit relative
   import extensions, and separate `package-lock.json` files. There is no root npm
   workspace/package. Match nearby formatting and exports; retain existing API

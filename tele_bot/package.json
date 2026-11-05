@@ -1,6 +1,6 @@
 {
   "name": "tele-bot",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "main": "src/server.js",
   "scripts": {
@@ -9,9 +9,9 @@
     "test": "node --test"
   },
   "dependencies": {
-    "dotenv": "^17.4.2",
-    "moment": "^2.30.1",
+    "dotenv": "^18.0.9",
+    "moment": "^2.31.0",
     "node-cron": "^4.6.0",
-    "node-telegram-bot-api": "^1.1.2"
+    "node-telegram-bot-api": "^2.3.0"
   }
 }

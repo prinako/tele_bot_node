@@ -5,7 +5,7 @@ import {
   getBotInstallationUsers,
   updateBotInstallationTopicSettings,
 } from "../api/backendClient.js";
-import Table from "../components/Table.js";
+import Table from "../components/Table.jsx";
 
 const tabs = ["Overview", "Users", "Topics", "Settings"];
 
@@ -25,6 +25,7 @@ export default function BotInstallationDetailsPage({ telegramChatId }) {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   async function load() {
     setError("");
@@ -43,7 +44,8 @@ export default function BotInstallationDetailsPage({ telegramChatId }) {
   }
 
   useEffect(() => {
-    load().catch((err) => setError(err.message));
+    setLoading(true);
+    load().catch((err) => setError(err.message)).finally(() => setLoading(false));
   }, [telegramChatId]);
 
   async function saveSettings(event) {
@@ -79,8 +81,8 @@ export default function BotInstallationDetailsPage({ telegramChatId }) {
         </div>
         <a className="button-link" href="#/bot-installations">Back</a>
       </header>
-      {error && <div className="alert">{error}</div>}
-      {success && <div className="alert success">{success}</div>}
+      {error && <div className="alert" role="alert">{error}</div>}
+      {success && <div className="alert success" role="status">{success}</div>}
 
       <div className="tabs">
         {tabs.map((tab) => (
@@ -89,6 +91,7 @@ export default function BotInstallationDetailsPage({ telegramChatId }) {
             key={tab}
             onClick={() => setActiveTab(tab)}
             type="button"
+            aria-pressed={activeTab === tab}
           >
             {tab}
           </button>
@@ -144,6 +147,8 @@ export default function BotInstallationDetailsPage({ telegramChatId }) {
         <>
           <h2>Users</h2>
           <Table
+            key="installation-users"
+            loading={loading}
             columns={[
               { key: "telegramUserId", label: "Telegram User ID" },
               { key: "displayName", label: "Display" },
@@ -165,6 +170,8 @@ export default function BotInstallationDetailsPage({ telegramChatId }) {
         <>
           <h2>Topics</h2>
           <Table
+            key="installation-topics"
+            loading={loading}
             columns={[
               { key: "messageThreadId", label: "Message Thread ID" },
               { key: "name", label: "Name" },
