@@ -5,7 +5,7 @@ import {
   markAgendaMemberPaid,
   markAgendaMemberUnpaid,
 } from "../api/backendClient.js";
-import Table from "../components/Table.js";
+import Table from "../components/Table.jsx";
 
 export default function AgendaDetailsPage({ id }) {
   const [payment, setPayment] = useState(null);

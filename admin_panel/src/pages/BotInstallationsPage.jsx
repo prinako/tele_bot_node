@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getBotInstallations } from "../api/backendClient.js";
-import Table from "../components/Table.js";
+import Table from "../components/Table.jsx";
 
 export default function BotInstallationsPage() {
   const [installations, setInstallations] = useState([]);

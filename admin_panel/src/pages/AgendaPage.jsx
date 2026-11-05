@@ -4,7 +4,7 @@ import {
   getAgendaPayments,
   updateAgendaPayment,
 } from "../api/backendClient.js";
-import Table from "../components/Table.js";
+import Table from "../components/Table.jsx";
 
 export default function AgendaPage() {
   const [payments, setPayments] = useState([]);

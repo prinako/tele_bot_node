@@ -5,7 +5,7 @@ import {
   getBotInstallationUsers,
   updateBotInstallationTopicSettings,
 } from "../api/backendClient.js";
-import Table from "../components/Table.js";
+import Table from "../components/Table.jsx";
 
 const tabs = ["Overview", "Users", "Topics", "Settings"];
 

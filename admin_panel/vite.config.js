@@ -20,5 +20,5 @@ function treatJsAsJsx() {
 }
 
 export default defineConfig({
-  plugins: [treatJsAsJsx(), react()],
+  plugins: [react()],
 });

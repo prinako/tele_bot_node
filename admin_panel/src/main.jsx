@@ -4,15 +4,15 @@ import { createRoot } from "react-dom/client";
 import LoginPage from "./pages/LoginPage.jsx";
 import { getSession, logout } from "./api/backendClient.js";
 
-import Layout from "./components/Layout.js";
-import AgendaDetailsPage from "./pages/AgendaDetailsPage.js";
-import AgendaPage from "./pages/AgendaPage.js";
-import BanksPage from "./pages/BanksPage.js";
+import Layout from "./components/Layout.jsx";
+import AgendaDetailsPage from "./pages/AgendaDetailsPage.jsx";
+import AgendaPage from "./pages/AgendaPage.jsx";
+import BanksPage from "./pages/BanksPage.jsx";
 import BotInstallationDetailsPage from "./pages/BotInstallationDetailsPage.jsx";
 import BotInstallationsPage from "./pages/BotInstallationsPage.jsx";
-import DashboardPage from "./pages/DashboardPage.js";
-import PixKeysPage from "./pages/PixKeysPage.js";
-import UsersPage from "./pages/UsersPage.js";
+import DashboardPage from "./pages/DashboardPage.jsx";
+import PixKeysPage from "./pages/PixKeysPage.jsx";
+import UsersPage from "./pages/UsersPage.jsx";
 import "./styles/main.css";
 
 function currentRoute() {
