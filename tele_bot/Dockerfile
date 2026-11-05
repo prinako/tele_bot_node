@@ -1,13 +1,13 @@
-FROM node:26-bookworm-slim
+FROM node:26.13.0-bookworm-slim
 
 LABEL maintainer="mail@prinako.online"
-LABEL version="1.0.2"
+LABEL version="3.2.1"
 LABEL org.opencontainers.image.source=https://github.com/prinako/tele_bot_node
 LABEL org.opencontainers.image.description="A Telegram bot for organizing shared bills, tracking who has paid, and managing PIX payment details."
 LABEL org.opencontainers.image.title="tele_bot_node"
 LABEL org.opencontainers.image.authors="mail@prinako.online"
 LABEL org.opencontainers.image.vendor="Prinako"
-LABEL org.opencontainers.image.version="3.1.2"
+LABEL org.opencontainers.image.version="3.2.1"
 LABEL org.opencontainers.image.documentation="https://github.com/prinako/tele_bot_node#readme"
 LABEL org.opencontainers.image.licenses="MIT"
 
