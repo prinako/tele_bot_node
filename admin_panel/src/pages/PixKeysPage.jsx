@@ -6,6 +6,7 @@ export default function PixKeysPage() {
   const [keys, setKeys] = useState([]);
   const [editing, setEditing] = useState({});
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   async function load() {
     const rows = await getPixKeys();
@@ -25,7 +26,8 @@ export default function PixKeysPage() {
   }
 
   useEffect(() => {
-    load().catch((err) => setError(err.message));
+    setLoading(true);
+    load().catch((err) => setError(err.message)).finally(() => setLoading(false));
   }, []);
 
   return (
@@ -36,12 +38,14 @@ export default function PixKeysPage() {
           <p>Registered keys with owner and bank context.</p>
         </div>
       </header>
-      {error && <div className="alert">{error}</div>}
+      {error && <div className="alert" role="alert">{error}</div>}
       <Table
+        loading={loading}
         columns={[
           {
             key: "owner",
             label: "Owner",
+            searchValue: (key) => key.owner?.displayName || key.owner?.username || key.telegramId,
             render: (key) =>
               key.owner?.displayName || key.owner?.username || key.telegramId,
           },
@@ -51,6 +55,7 @@ export default function PixKeysPage() {
             label: "PIX",
             render: (key) => (
               <input
+                aria-label={`PIX key for ${key.owner?.displayName || key.owner?.username || key.telegramId}`}
                 value={editing[key.id] ?? ""}
                 onChange={(event) =>
                   setEditing((items) => ({
