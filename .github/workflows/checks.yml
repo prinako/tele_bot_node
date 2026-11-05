@@ -21,6 +21,10 @@ jobs:
           cache-dependency-path: ${{ matrix.service }}/package-lock.json
       - run: npm ci
         working-directory: ${{ matrix.service }}
+      - name: Verify installed Telegram v2 SDK and lifecycle
+        if: matrix.service == 'tele_bot'
+        run: npm run test:sdk
+        working-directory: tele_bot
       - run: npm test
         working-directory: ${{ matrix.service }}
   frontend:

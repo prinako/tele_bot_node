@@ -8,6 +8,7 @@ npm ci --prefix tele_bot
 npm ci --prefix admin_panel
 npm test --prefix backend
 npm test --prefix tele_bot
+npm run test:sdk --prefix tele_bot
 npm run build --prefix admin_panel
 bash scripts/test-postgres.sh
 find backend/src tele_bot/src -name '*.js' -type f -exec node --check {} \;
@@ -15,6 +16,13 @@ git diff --check
 ```
 
 The security tests exercise real HTTP requests through authentication/authorization middleware using a fake repository boundary. They cover session expiry/revocation/rotation, Origin checks, login throttling, credential spoofing, blocked users, ownership and payment targeting. Bot tests verify concurrent identity isolation, registration-before-authorization, denial and backend outages. They do not start live polling or connect to a real database.
+
+The bot suite also imports the installed Telegram v2 SDK and dispatches synthetic
+updates through its real middleware with mocked Telegram/backend HTTP transports.
+The lifecycle checks exercise real polling abort/error handling against fake HTTP
+responses, including an isolated CLI subprocess. They never contact Telegram.
+CI runs the explicit SDK gate after npm ci as well as the complete suite; see
+[Telegram v2](telegram-v2.md).
 
 The checks workflow runs backend/bot tests, the frontend build and disposable PostgreSQL regressions. The database test script creates a memory-backed PostgreSQL 17 container on a random localhost port and removes only that container on exit. It never mounts home-lab data. Default npm tests skip database cases unless this script supplies the isolated database flag and URL. The existing Docker workflow builds images and publishes on its configured branch/tag events. Passing an image build is not a database or live Telegram integration test.
 

@@ -13,6 +13,14 @@ The React/Vite panel is a static SPA with hash-based routes. Production nginx se
 
 The bot uses `node-telegram-bot-api`, in-memory interaction classes and a `node-cron` reminder task. Its backend client adds a service Bearer token. `AsyncLocalStorage` propagates the Telegram sender ID within one update's asynchronous calls without mixing identities from concurrent users. Scheduled calls have no acting user and can read pending bills only.
 
+The v2 `Bot` is created without polling. `integration.js` registers context-based
+command/message/callback middleware; the existing authorization and conversation
+interfaces receive normalized updates, with callback identity from `ctx.from`.
+`api/telegramClient.js` converts the internal transport calls to v2 `bot.api`
+parameter objects. Explicit CLI startup in `server.js` invokes `lifecycle.js`,
+which owns polling, scheduler startup and signal cleanup. Importing these modules
+performs no Telegram requests or timer/polling startup. See [Telegram v2](telegram-v2.md).
+
 The backend runs authentication and authorization before protected routes. Controllers call services and repositories; repositories use parameterized SQL through `pg`. Browser admins have no caller-selected Telegram identity. An actor header is honored only with the bot service credential.
 
 ## Data model
