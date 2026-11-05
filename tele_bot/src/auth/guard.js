@@ -13,10 +13,12 @@ export function createUserGuard(bot, { register = registerTelegramUserAndMembers
         await authorize(); // Backend reads current DB flags on every update; no permission cache.
         await handler(update, ...args);
       } catch (error) {
-        if (error.status === 401 || error.status === 403) clear(update.from.id);
+        if (error.status === 401 || error.status === 403) await clear(update.from.id);
         console.error("Bot operation failed", { status: error.status || 500 });
         if (callback) {
-          await bot.answerCallbackQuery(update.id, { text: "Operação não permitida ou indisponível.", show_alert: true }).catch(() => {});
+          if (!error.callbackAcknowledged) {
+            await bot.answerCallbackQuery(update.id, { text: "Operação não permitida ou indisponível.", show_alert: true }).catch(() => {});
+          }
           return;
         }
         if (!quiet && msg.chat?.id) await bot.sendMessage(msg.chat.id,
