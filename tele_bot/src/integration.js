@@ -11,14 +11,30 @@ import DeleteAgenda from "./agendas/delete_agenda.js";
 
 export function logBotError(message, error, extra = {}) {
   // SDK/network messages and stacks can contain request URLs and credentials.
-  console.error(message, { ...extra, name: error?.name, code: error?.code, status: error?.errorCode || error?.status });
+  console.error(
+    message, 
+    { 
+      ...extra, 
+      name: error?.name, 
+      code: error?.code, 
+      status: error?.errorCode || error?.status 
+    }
+  );
 }
 
 export function createTelegramIntegration({ token, transportOptions, guardOptions, flowOptions } = {}) {
   const bot = createBot({ token, transportOptions });
+  
   const client = createTelegramClient(bot.api);
   const flows = new ConversationFlows(client, flowOptions);
-  const guard = createUserGuard(client, { ...guardOptions, clear: actorId => flows.clearUser(actorId) });
+  
+  const guard = createUserGuard(
+    client, 
+    { ...guardOptions, 
+      clear: actorId => flows.clearUser(actorId) 
+    }
+  );
+  
   const command = (name, handler) => {
     const guarded = guard(handler);
     bot.command(name, ctx => guarded({ ...ctx.message, from: ctx.from }));
@@ -29,28 +45,48 @@ export function createTelegramIntegration({ token, transportOptions, guardOption
     await flows.cancel(msg);
     await client.sendMessage(msg.chat.id, "Operação cancelada", { message_thread_id: msg.message_thread_id });
   });
+  
   command("start", msg => client.sendMessage(msg.chat.id, "Please use /agenda to start the process.", {
     message_thread_id: msg.message_thread_id,
   }));
+  
   command("agenda", msg => flows.start(msg, scoped => new AgendaPayment(scoped), flow => flow.start(msg)));
-  command("help", msg => client.sendMessage(msg.chat.id,
+  
+  command("help", msg => client.sendMessage(
+    msg.chat.id,
     "Comandos disponíveis:\n /agenda - Para registrar o pagamento de fatura em pendente.\n /cancel - Para cancelar a operação atual.\n /pagou - Para adicionar quem pagou a parte dele.\n /registerpix - Para registrar sua chave PIX.\n /delete - Para deletar uma fatura registrada.\n /whopaid - Para saber quem pagou.\n /ia - Para conversar com o bot.",
-    { message_thread_id: msg.message_thread_id }));
-  command("whopaid", msg => flows.start(msg, scoped => new SomeonePaid(scoped), flow => flow.addWhoPaid(msg)));
+    { message_thread_id: msg.message_thread_id }
+  ));
+  
+  command("whopaid", msg => flows.start(
+    msg, scoped => new SomeonePaid(scoped), 
+    flow => flow.addWhoPaid(msg)
+  ));
+
   command("pagou", msg => flows.start(msg, scoped => new Paid(scoped), flow => flow.paid(msg)));
+  
   command("registerpix", msg => flows.start(msg, scoped => new Pix(scoped), flow => flow.addPix(msg)));
+  
   command("delete", async msg => {
     await flows.cancel(msg);
     await new DeleteAgenda(client).deleteAgenda(msg);
   });
-  command("ia", msg => client.sendMessage(msg.chat.id,
+  
+  command("ia", msg => client.sendMessage(
+    msg.chat.id,
     "Oi, sou a inteligência artificial do bot de faturas.\n\nNo momento, sou apenas um bot de faturas.\n\nPara saber mais sobre mim, digite /help",
-    { message_thread_id: msg.message_thread_id }));
+    { message_thread_id: msg.message_thread_id }
+  ));
 
   const message = guard(msg => handleUserMessage(client, msg, flows), { quiet: true });
   const callback = guard(query => flows.callback(query), { callback: true });
+  
   bot.on("message", ctx => message({ ...ctx.message, from: ctx.from }));
   bot.on("callback_query", ctx => callback({ ...ctx.callbackQuery, from: ctx.from }));
-  bot.catch((error, ctx) => logBotError("Telegram update failed", error, { updateId: ctx.update.update_id }));
+  bot.catch((error, ctx) => logBotError(
+    "Telegram update failed", 
+    error, { updateId: ctx.update.update_id }
+  ));
+  
   return { bot, client, flows };
 }
