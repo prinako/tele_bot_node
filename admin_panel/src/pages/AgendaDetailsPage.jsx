@@ -6,11 +6,13 @@ import {
   markAgendaMemberUnpaid,
 } from "../api/backendClient.js";
 import Table from "../components/Table.jsx";
+import Badge from "../components/Badge.jsx";
 
 export default function AgendaDetailsPage({ id }) {
   const [payment, setPayment] = useState(null);
   const [members, setMembers] = useState([]);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   async function load() {
     const [paymentData, memberData] = await Promise.all([
@@ -35,7 +37,8 @@ export default function AgendaDetailsPage({ id }) {
   }
 
   useEffect(() => {
-    load().catch((err) => setError(err.message));
+    setLoading(true);
+    load().catch((err) => setError(err.message)).finally(() => setLoading(false));
   }, [id]);
 
   return (
@@ -47,7 +50,7 @@ export default function AgendaDetailsPage({ id }) {
         </div>
         <a className="button-link" href="#/agenda">Back</a>
       </header>
-      {error && <div className="alert">{error}</div>}
+      {error && <div className="alert" role="alert">{error}</div>}
       {payment && (
         <div className="details-grid">
           <div>
@@ -68,7 +71,7 @@ export default function AgendaDetailsPage({ id }) {
           </div>
           <div>
             <span>Status</span>
-            <strong>{payment.isFullyPaid ? "Paid" : "Open"}</strong>
+            <strong><Badge tone={payment.isFullyPaid ? "success" : "warning"}>{payment.isFullyPaid ? "Paid" : "Open"}</Badge></strong>
           </div>
           <div>
             <span>Created By</span>
@@ -77,6 +80,7 @@ export default function AgendaDetailsPage({ id }) {
         </div>
       )}
       <Table
+        loading={loading}
         columns={[
           { key: "telegramId", label: "Telegram ID" },
           { key: "displayName", label: "Name" },
@@ -85,7 +89,8 @@ export default function AgendaDetailsPage({ id }) {
           {
             key: "isPaid",
             label: "Paid",
-            render: (member) => member.isPaid ? "Paid" : "Open",
+            searchValue: (member) => member.isPaid ? "Paid" : "Open",
+            render: (member) => <Badge tone={member.isPaid ? "success" : "warning"}>{member.isPaid ? "Paid" : "Open"}</Badge>,
           },
           { key: "paidAt", label: "Paid At" },
           {
