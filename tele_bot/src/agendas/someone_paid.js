@@ -18,6 +18,7 @@ class SomeonePaid {
     this.bot = bot;
     this._selectedAgendaId = "";
     this._members = [];
+    this.stage = "bill";
   }
 
   get selectedAgendaId() {
@@ -155,6 +156,8 @@ class SomeonePaid {
    * Handles callback queries from the user.
    * @param {Object} callbackQuery - The callback query object sent by the user.
    */
+  handleCallback(query) { return this.handlePaid(query); }
+
   async handlePaid(callbackQuery) {
     const msg = callbackQuery.message;
     const data = callbackQuery.data;
@@ -167,6 +170,7 @@ class SomeonePaid {
         this.members = this.isAdmin || Number(result.senderId) === Number(this.actorId)
           ? result.members
           : result.members.filter((member) => Number(member.telegramId) === Number(this.actorId));
+        this.stage = "members";
         this.resend(msg);
       }
       return;
@@ -190,10 +194,12 @@ class SomeonePaid {
           isPaid: true,
         }));
         await this.addToDatabase(callbackQuery);
-        break;
+        this.stage = "complete";
+        return true;
       case "done":
         await this.addToDatabase(callbackQuery);
-        break;
+        this.stage = "complete";
+        return true;
     }
   }
 
