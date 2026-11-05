@@ -254,6 +254,4 @@ VALUES
   ('Pagseguro', 130),
   ('Banco Pan', 140)
 ON CONFLICT (name)
-DO UPDATE SET
-  sort_order = EXCLUDED.sort_order,
-  updated_at = NOW();
+DO NOTHING;
