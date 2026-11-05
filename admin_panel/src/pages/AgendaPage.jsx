@@ -55,7 +55,8 @@ export default function AgendaPage() {
         columns={[
           { key: "title", label: "Title" },
           { key: "date", label: "Due" },
-          { key: "amount", label: "Amount" },
+          { key: "amount", label: "Bill amount" },
+          { key: "surplusAmount", label: "Rounding surplus" },
           { key: "description", label: "Description" },
           { key: "pix", label: "PIX" },
           { key: "bank", label: "Bank" },

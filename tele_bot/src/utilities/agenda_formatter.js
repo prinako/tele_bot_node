@@ -32,6 +32,8 @@ export default function agendaFormatter(agenda) {
 
   return `⚠️⚠️ *ATTENTION ${agenda.title.toUpperCase()} BILL* ⚠️⚠️\n\n` +
     `R$ ${agenda.amount} \n\n` +
+    `Total das cotas: R$ ${agenda.allocatedAmount ?? agenda.amount}\n` +
+    `Excedente de arredondamento: R$ ${agenda.surplusAmount ?? "0.00"}\n\n` +
     `*Vencimento:* ${agenda.date}\n\n` +
     `Descrição da fatura: ${agenda.description}\n\n` +
     `⚠️ Favor informar, na descrição do pagamento, o nome da fatura correspondente. Obrigado! ⚠️\n\n` +

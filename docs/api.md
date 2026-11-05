@@ -39,7 +39,7 @@ Browser code uses `credentials: "include"`. Do not expose the bot credential in 
 | `PATCH /api/agenda/:id/members/:telegramId/paid` | Creator, target responsible member, or admin |
 | `PATCH /api/agenda/:id/members/:telegramId/unpaid` | Same policy as paid |
 
-Ordinary members using bill PATCH must specify their own target Telegram ID, provide `isPaid`, and supply no bill-edit fields. Creator/admin PATCH without a target can update all responsible members' payment flags. Updates of amounts/shares retain current business behavior; see [known issues](development.md).
+Ordinary members using bill PATCH must specify their own target Telegram ID, provide `isPaid`, and supply no bill-edit fields. Creator/admin PATCH without a target can update all responsible members' payment flags. Amounts accept at most two decimal places. Each equal share rounds upward to a cent; the bill keeps its original amount. Bill responses add `allocatedAmount` and `surplusAmount` as decimal strings. Amount/member edits recalculate shares atomically and return 409 if any current responsible member is paid; explicitly mark those payments unpaid first. See the [implementation policy](project-review-implementation.md).
 
 ## Status codes
 

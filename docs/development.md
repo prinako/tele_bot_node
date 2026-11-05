@@ -9,13 +9,14 @@ npm ci --prefix admin_panel
 npm test --prefix backend
 npm test --prefix tele_bot
 npm run build --prefix admin_panel
+bash scripts/test-postgres.sh
 find backend/src tele_bot/src -name '*.js' -type f -exec node --check {} \;
 git diff --check
 ```
 
 The security tests exercise real HTTP requests through authentication/authorization middleware using a fake repository boundary. They cover session expiry/revocation/rotation, Origin checks, login throttling, credential spoofing, blocked users, ownership and payment targeting. Bot tests verify concurrent identity isolation, registration-before-authorization, denial and backend outages. They do not start live polling or connect to a real database.
 
-The checks workflow runs backend/bot tests and the frontend build. The existing Docker workflow builds images and publishes on its configured branch/tag events. Passing an image build is not a database or live Telegram integration test.
+The checks workflow runs backend/bot tests, the frontend build and disposable PostgreSQL regressions. The database test script creates a memory-backed PostgreSQL 17 container on a random localhost port and removes only that container on exit. It never mounts home-lab data. Default npm tests skip database cases unless this script supplies the isolated database flag and URL. The existing Docker workflow builds images and publishes on its configured branch/tag events. Passing an image build is not a database or live Telegram integration test.
 
 ## Local processes without Docker
 
@@ -25,12 +26,18 @@ Backend startup applies database DDL. Bot startup starts live polling and schedu
 
 ## Current backlog
 
-- Payment-share recalculation when a total or member list changes; select exact cent-allocation and paid-share edit policies before implementation.
-- Reminder timezone and full-calendar-date handling across month/year boundaries.
-- Persistent interaction state, per-chat/topic flow isolation, callback nonce/step validation, replay protection and expiry. `/cancel` now clears all five user flow maps, but this is not complete replay protection.
+- Durable interaction persistence and reminder delivery history. Flows currently expire
+  after 15 minutes and restart invalidates keyboards; reminder reruns can duplicate messages.
 - `/delete` Telegram command remains a placeholder; authorized deletion is available through the admin panel/API.
 - Recorded membership removal and bot installation status updates from Telegram membership events.
-- Real PostgreSQL authorization/write integration tests and live Telegram smoke checks in a disposable environment.
+- Broader real PostgreSQL authorization integration coverage and live Telegram smoke checks in a disposable environment. Payment/write/schema regressions now run against disposable PostgreSQL.
 - Repository error propagation, input schemas and business audit events.
 
-No database schema migration is required by this authentication change. Multi-user profile lookup was corrected to return a list, and a user's pending-bill listing now includes bills for which they are responsible so self-payment is reachable.
+No database schema migration is required by the authentication or review fixes. The bank seed now preserves existing administrator settings. Multi-user profile lookup was corrected to return a list, and a user's pending-bill listing now includes bills for which they are responsible so self-payment is reachable.
+
+## Review fixes
+
+See [project-review-implementation.md](project-review-implementation.md) for the six
+ordered tasks, approved payment policy, regression tests and compatibility notes.
+Shares round up equally; the original bill total remains unchanged and the surplus
+is displayed separately. Amount/member edits require all current shares to be unpaid.

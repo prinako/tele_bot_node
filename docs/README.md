@@ -10,5 +10,6 @@ Tele Bot Node records shared bills and PIX details. It records payment confirmat
 | [Security](security.md) | Login, bot trust boundary, permission matrix and limitations |
 | [API](api.md) | Authentication, endpoint access, responses |
 | [Development](development.md) | Skills, tests, CI and current backlog |
+| [Project review implementation](project-review-implementation.md) | Ordered fixes, policy decisions, acceptance tests and validation results |
 
 These pages describe the implementation in this branch. Unfinished behavior is explicitly identified in the development guide.

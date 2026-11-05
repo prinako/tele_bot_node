@@ -10,6 +10,7 @@ class paid {
     this.bot = bot;
 
     this._selectedAgendaId = "";
+    this.stage = "bill";
   }
 
   get selectedAgendaId() {
@@ -85,6 +86,8 @@ class paid {
     // })
   }
 
+  handleCallback(query) { return this.handlePaid(query); }
+
   async handlePaid(callbackQuery) {
     const userId = callbackQuery.from.id;
     const data = callbackQuery.data;
@@ -93,9 +96,9 @@ class paid {
     if (data.startsWith("paid_")) {
       this.selectedAgendaId = data.split("_")[1];
 
-      await this.addToDatabase(callbackQuery, {
-        isPaid: true,
-      });
+      await this.addToDatabase(callbackQuery, { isPaid: true });
+      this.stage = "complete";
+      return true;
     }
   }
 }

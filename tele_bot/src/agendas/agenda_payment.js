@@ -1,3 +1,4 @@
+import { moneyToCents, formatCents, equalShareCents } from "../utilities/money.js";
 import moment from "moment";
 import agendaFormatter from "../utilities/agenda_formatter.js";
 import getMemberName from "../utilities/get_member_name.js";
@@ -11,20 +12,6 @@ import {
   insetPix,
 } from "../api/backendClient.js";
 
-
-function parseCurrency(value) {
-  if (typeof value === "number") {
-    return value;
-  }
-
-  const text = String(value ?? "").trim();
-  const normalized = text.includes(",")
-    ? text.replace(/\./g, "").replace(",", ".")
-    : text;
-
-  const amount = Number(normalized.replace(/[^\d.-]/g, ""));
-  return Number.isFinite(amount) ? amount : null;
-}
 
 class AgendaPayment {
   /**
@@ -451,7 +438,7 @@ class AgendaPayment {
    * @param {Object} msg - The message object sent by the user
    * @returns {boolean} Whether the process is complete or not
    */
-  handleResponse(msg) {
+  async handleResponse(msg) {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
     const userText = msg.text;
@@ -470,7 +457,7 @@ class AgendaPayment {
           bank: this.selectedBank,
           user: msg.from,
         };
-        this.insetPixToDB(data);
+        await this.insetPixToDB(data);
         return false;
 
       case "title":
@@ -483,7 +470,7 @@ class AgendaPayment {
 
       case "amount":
         this.selectedAmount = userText;
-        void this.showMemberPicker(chatId, messageThreadId, userId).catch(
+        await this.showMemberPicker(chatId, messageThreadId, userId).catch(
           async (error) => {
             console.error("Operation failed", { code: error.code, status: error.status });
             await this.bot.sendMessage(
@@ -548,23 +535,20 @@ class AgendaPayment {
    * @return {boolean} true if the divider was successful, false otherwise.
    */
   dividers(account, numberOfDividers) {
-    // Attempt to convert the account and number of dividers to numbers
-    const acc = parseCurrency(account);
-    const dividers = Number(numberOfDividers);
-
-    // Check if the conversion was successful
-    if (!acc || !dividers || dividers <= 0) {
+    try {
+      const total = moneyToCents(account);
+      const count = Number(numberOfDividers);
+      const share = equalShareCents(total, count);
+      const surplus = share * BigInt(count) - total;
+      this.selectedAmount = formatCents(total);
+      this.selectedDescription = `R$ ${formatCents(share)} por cada pessoa\n\n` +
+        `Total da fatura: R$ ${formatCents(total)}\n` +
+        `Total das cotas: R$ ${formatCents(share * BigInt(count))}\n` +
+        `Excedente de arredondamento: R$ ${formatCents(surplus)}`;
+      return true;
+    } catch {
       return false;
     }
-
-    // Calculate the divided amount and set the selected description
-    const dividedAmount = acc / dividers;
-    this.selectedDescription = `R$ ${
-      dividedAmount.toFixed(2)
-    } por cada pessoa \n\n R$ ${acc}/${dividers} = R$ ${
-      dividedAmount.toFixed(2)
-    }`;
-    return true;
   }
 
   /**
@@ -572,6 +556,9 @@ class AgendaPayment {
    * Depending on the current stage of the interaction, the user's response will be handled differently.
    * @param {Object} callbackQuery - The callback query object sent by the user.
    */
+  acceptsText() { return ["newPix", "title", "amount"].includes(this.stage); }
+  handleCallback(query) { return this.handleKeyboard(query); }
+
   async handleKeyboard(callbackQuery) {
     const msg = callbackQuery.message;
     const data = callbackQuery.data;
@@ -668,7 +655,7 @@ class AgendaPayment {
     if (!this.dividers(this.selectedAmount, responsibleCount)) {
       this.stage = "amount";
       await this.bot.answerCallbackQuery(callbackQuery.id, {
-        text: "Valor inválido. Digite o valor da fatura novamente.",
+        text: "Valor inválido. Use até duas casas decimais.",
         show_alert: true,
       });
       await this.bot.sendMessage(
