@@ -53,3 +53,28 @@ test("backend client sends service credential and the current actor, with no act
     assert.equal(headers[1]["X-Telegram-User-Id"], undefined);
   } finally { globalThis.fetch = original; }
 });
+
+test("already acknowledged callback errors are not acknowledged twice", async () => {
+  let cleared;
+  const guard = createUserGuard({answerCallbackQuery: async () => assert.fail("Duplicate acknowledgement")}, {
+    register: async () => {}, authorize: async () => {}, clear: async id => {cleared=id;},
+  });
+  await guard(async () => {
+    throw Object.assign(new Error("Denied after acknowledgement"), {status:403,callbackAcknowledged:true});
+  }, {callback:true})({id:"acknowledged",from:{id:123},message:{chat:{id:-10}}});
+  assert.equal(cleared,123);
+});
+
+test("message failures preserve thread context and quiet handlers suppress replies", async () => {
+  const sent=[];
+  const guard=createUserGuard({sendMessage:async (...args)=>sent.push(args)}, {
+    register:async () => {}, authorize:async () => {throw Object.assign(new Error("Denied"), {status:403});},
+  });
+  const msg={from:{id:123},chat:{id:-10},message_thread_id:42};
+  await guard(() => assert.fail("Denied handler ran"))(msg);
+  assert.equal(sent[0][0],-10);
+  assert.equal(sent[0][2].message_thread_id,42);
+  assert.match(sent[0][1],/permissão/);
+  await guard(() => assert.fail("Denied quiet handler ran"),{quiet:true})(msg);
+  assert.equal(sent.length,1);
+});

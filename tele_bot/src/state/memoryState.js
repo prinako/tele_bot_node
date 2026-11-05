@@ -54,49 +54,71 @@ export class ConversationFlows {
     return { ...markup, inline_keyboard };
   }
 
+  async acknowledge(entry, target, id, options) {
+    if (entry.acknowledged.has(id)) return;
+    entry.acknowledged.add(id);
+    return target.answerCallbackQuery(id, options).catch(() => {});
+  }
+
+  isMessageContext(entry, property, chatId, options) {
+    if (String(chatId) !== String(entry.chatId)) return false;
+    if (property !== "sendMessage") return true;
+    return (options.message_thread_id || 0) === entry.topicId;
+  }
+
+  prepareMessage(entry, property, args) {
+    const optionsIndex = property === "sendMessage" ? 2 : 1;
+    const options = { ...args[optionsIndex] };
+    const chatId = property === "sendMessage" ? args[0] : options.chat_id;
+    const isContext = this.isMessageContext(entry, property, chatId, options);
+    if (isContext) {
+      if (property === "editMessageReplyMarkup") args[0] = this.markup(entry, args[0]);
+      else options.reply_markup = this.markup(entry, options.reply_markup);
+    }
+    args[optionsIndex] = options;
+    const markup = property === "editMessageReplyMarkup" ? args[0] : options.reply_markup;
+    return { args, options, isContext, markup };
+  }
+
+  async trackKeyboard(entry, request, response) {
+    if (!request.isContext) return;
+    const hasCallbacks = request.markup?.inline_keyboard?.some(row =>
+      row.some(button => button.callback_data));
+    if (!hasCallbacks) return;
+    entry.keyboardId = response?.message_id ?? request.options.message_id;
+    entry.keyboardIds.add(entry.keyboardId);
+    if (!this.active(entry)) await this.remove(entry);
+  }
+
+  async sendScopedMessage(entry, target, property, args) {
+    if (!this.active(entry)) return;
+    const request = this.prepareMessage(entry, property, args);
+    const response = await target[property](...request.args);
+    await this.trackKeyboard(entry, request, response);
+    return response;
+  }
+
+  trackOperation(entry, operation) {
+    // Legacy interaction methods may omit await; drain still observes their failures.
+    operation.catch(() => {});
+    entry.pending.push(operation);
+    return operation;
+  }
+
+  scopedProperty(entry, target, property) {
+    if (property === "answerCallbackQuery") {
+      return (id, options) => this.acknowledge(entry, target, id, options);
+    }
+    if (["sendMessage", "editMessageText", "editMessageReplyMarkup"].includes(property)) {
+      return (...args) => this.trackOperation(entry,
+        this.sendScopedMessage(entry, target, property, args));
+    }
+    const value = target[property];
+    return typeof value === "function" ? value.bind(target) : value;
+  }
+
   scopedBot(entry) {
-    const registry = this;
-    return new Proxy(this.bot, {
-      get(target, property) {
-        if (property === "answerCallbackQuery") return async (id, options) => {
-          if (entry.acknowledged.has(id)) return;
-          entry.acknowledged.add(id);
-          return target.answerCallbackQuery(id, options).catch(() => {});
-        };
-        if (!["sendMessage", "editMessageText", "editMessageReplyMarkup"].includes(property)) {
-          return typeof target[property] === "function" ? target[property].bind(target) : target[property];
-        }
-        return (...args) => {
-          const operation = (async () => {
-            if (!registry.active(entry)) return;
-            const optionsIndex = property === "sendMessage" ? 2 : 1;
-            const options = { ...args[optionsIndex] };
-            const chatId = property === "sendMessage" ? args[0] : options.chat_id;
-            const isContext = String(chatId) === String(entry.chatId) &&
-              (property !== "sendMessage" || (options.message_thread_id || 0) === entry.topicId);
-            if (isContext) {
-              if (property === "editMessageReplyMarkup") args[0] = registry.markup(entry, args[0]);
-              else options.reply_markup = registry.markup(entry, options.reply_markup);
-            }
-            args[optionsIndex] = options;
-            const response = await target[property](...args);
-            if (isContext) {
-              const markup = property === "editMessageReplyMarkup" ? args[0] : options.reply_markup;
-              if (markup?.inline_keyboard?.some(row => row.some(button => button.callback_data))) {
-                entry.keyboardId = response?.message_id ?? options.message_id;
-                entry.keyboardIds.add(entry.keyboardId);
-                if (!registry.active(entry)) await registry.remove(entry);
-              }
-            }
-            return response;
-          })();
-          // Legacy interaction methods may omit await; drain still observes their failures.
-          operation.catch(() => {});
-          entry.pending.push(operation);
-          return operation;
-        };
-      },
-    });
+    return new Proxy(this.bot, { get: this.scopedProperty.bind(this, entry) });
   }
 
   async start(message, factory, begin) {
