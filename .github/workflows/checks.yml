@@ -21,6 +21,10 @@ jobs:
           cache-dependency-path: ${{ matrix.service }}/package-lock.json
       - run: npm ci
         working-directory: ${{ matrix.service }}
+      - name: Verify installed Telegram v2 SDK and lifecycle
+        if: matrix.service == 'tele_bot'
+        run: npm run test:sdk
+        working-directory: tele_bot
       - run: npm test
         working-directory: ${{ matrix.service }}
   frontend:
@@ -36,3 +40,15 @@ jobs:
         working-directory: admin_panel
       - run: npm run build
         working-directory: admin_panel
+  postgres-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+        working-directory: backend
+      - run: bash scripts/test-postgres.sh

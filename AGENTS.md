@@ -1,5 +1,12 @@
 # Project instructions
 
+## Active implementation work
+
+Follow [Project review implementation](docs/project-review-implementation.md) for
+the six reviewed fixes, their agreed policies, acceptance tests and progress.
+Implement tasks in order; verify each task before starting the next. Do not treat
+proposed payment policies in that document as approved decisions.
+
 ## Scope and skills
 
 Keep changes focused on the requested task and preserve unrelated working-tree changes.
@@ -38,6 +45,11 @@ scripts that are not shipped in the installable skill; do not run those commands
   in-memory flow state, `schedules` uses `node-cron`, and `api/backendClient.js`
   calls the backend over HTTP. Several command/keyboard/message directories are
   documented extraction destinations, not completed architectural layers.
+  The installed v2 API uses named `Bot`, ordered context middleware and object
+  parameters on `bot.api`. `src/integration.js` registers handlers without startup;
+  `src/lifecycle.js` owns explicit polling, signals and scheduler teardown. Preserve
+  the conversation manager; its internal positional transport interface is adapted
+  by `src/api/telegramClient.js`. See [v2 conventions](docs/telegram-v2.md).
 - `admin_panel/`: React 19/Vite 8 SPA, pages and components, a shared HTTP client
   and CSS. Files containing JSX use `.jsx`; plain JavaScript modules use `.js`.
   Keep imports and the HTML entrypoint aligned with these extensions.
@@ -63,6 +75,9 @@ npm ci --prefix admin_panel
 
 # Compile the frontend without starting services
 npm run build --prefix admin_panel
+
+# Real PostgreSQL regressions in a new disposable container; automatic cleanup
+bash scripts/test-postgres.sh
 
 # Parse backend and bot JavaScript without importing/starting either service
 find backend/src tele_bot/src -name '*.js' -type f -exec node --check {} \;
@@ -108,15 +123,15 @@ path already satisfies them:
 - `total_amount` and `amount_share` are `NUMERIC(12,2)`; existing code divides
   JavaScript numbers and formats some output with `toFixed(2)`. This is current
   implementation, not a documented cent-allocation policy.
-- Future payment work must calculate with exact decimal amounts or integer cents,
-  persist two-decimal amounts, and keep the sum of allocated shares exactly equal
-  to the total. Define input precision and tie rounding explicitly before coding;
-  never independently round equal shares and silently lose/create cents. For an
-  indivisible split, document quotient/remainder allocation and a stable recipient
-  order. Which members receive residual cents, how to handle excess input precision,
-  and what happens to existing paid shares after amount/member edits remain product
-  decisions; do not select these policies implicitly. Cover examples such as
-  10.00 split three ways and edits after a member pays.
+- Payment policy selected for the review implementation: use integer cents or
+  exact decimals; reject entered totals with more than two decimal places; round
+  every equal member share upward to a whole cent (`10.00 / 3` → three `3.34`
+  shares). Retain the entered total and display the surplus separately (`0.02`).
+  This explicitly replaces the previous exact-sum/residual-recipient requirement.
+  Block amount/responsible-member edits while any responsible member is paid;
+  require a separate explicit unpaid operation first. Keep writes atomic and
+  serialize concurrent payment/edit operations. Do not silently rewrite historic
+  bills. See docs/project-review-implementation.md for gates and compatibility.
 
 ## Identity and permissions
 
@@ -139,9 +154,10 @@ new business-policy questions before extending permissions.
 
 ## Reminder and conversation requirements
 
-Current reminder code schedules `0 9 * * *` without an explicit timezone and compares
-day numbers inside matching months/years. Current flow maps are keyed by user ID.
-These observations do not establish the outcome of every execution path.
+The reminder scheduler uses `0 9 * * *` in `America/Belem` and compares full
+calendar dates. Interaction state is process-local, keyed by actor/chat/topic,
+with per-keyboard tokens and a 15-minute lifecycle. Preserve these guarantees;
+reminder delivery history is still non-durable.
 
 Future reminder work must use the explicit IANA timezone `America/Belem` for both
 scheduling and calendar-date calculations. Compare full dates across month/year

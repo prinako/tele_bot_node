@@ -12,9 +12,7 @@ import {
  * @return {Promise<Object>} The created agenda payment.
  */
 function createAgendaPayment(data) {
-  return new Promise((resolve) => {
-    insetAgendaPayment(data, resolve);
-  });
+  return insetAgendaPayment(data, (agenda) => agenda);
 }
 
 /**

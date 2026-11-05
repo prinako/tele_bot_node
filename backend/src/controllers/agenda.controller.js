@@ -66,6 +66,9 @@ async function patch(req, res, next) {
 
     return res.json(agenda);
   } catch (error) {
+    if (["INVALID_AMOUNT", "PAID_SHARE_EDIT"].includes(error.code)) {
+      return res.status(error.status).json({ error: error.message });
+    }
     return next(error);
   }
 }

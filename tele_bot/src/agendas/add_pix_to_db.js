@@ -24,6 +24,7 @@ class AddPixToDB {
      * @private
      */
     this._pix = "";
+    this.stage = "bank";
 
     /**
      * The ID of the user who is adding the pix.
@@ -124,14 +125,17 @@ class AddPixToDB {
     const msg = callbackQuery.message;
   }
 
+  acceptsText() { return this.stage === "pix"; }
+  handleCallback(query) { return this.handlePix(query); }
+
   handlePix(callbackQuery) {
     const msg = callbackQuery.message;
-    const userId = msg.from.id;
     const data = callbackQuery.data;
     const messageThreadId = msg.message_thread_id;
 
     if (data.startsWith("bank_")) {
       this.isStagePixChave = true;
+      this.stage = "pix";
       this.bank = data.replace(/^bank_/, "");
       this.bot.editMessageText(
         `Por favor, digite seu PIX da sua conta  ${this.bank} :`,
@@ -148,7 +152,7 @@ class AddPixToDB {
     }
   }
 
-  handleResponse(msg) {
+  async handleResponse(msg) {
     const userId = msg.from.id;
     const userText = msg.text;
     const messageThreadId = msg.message_thread_id;
@@ -167,7 +171,9 @@ class AddPixToDB {
         bank: this.bank,
         user: msg.from,
       };
-      this.insetPixToDB(data, userId, messageThreadId);
+      await this.insetPixToDB(data, msg.chat.id, messageThreadId);
+      this.stage = "complete";
+      return true;
     }
   }
 

@@ -164,7 +164,7 @@ async function markAgendaPaymentMemberUnpaid(id, telegramId) {
 }
 
 function insetAgendaPayment(data, next) {
-  createAgendaPayment(data)
+  return createAgendaPayment(data)
     .then((agenda) => next(agenda))
     .catch((error) => {
       console.error("Operation failed", { code: error.code, status: error.status });

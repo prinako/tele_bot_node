@@ -13,6 +13,14 @@ The React/Vite panel is a static SPA with hash-based routes. Production nginx se
 
 The bot uses `node-telegram-bot-api`, in-memory interaction classes and a `node-cron` reminder task. Its backend client adds a service Bearer token. `AsyncLocalStorage` propagates the Telegram sender ID within one update's asynchronous calls without mixing identities from concurrent users. Scheduled calls have no acting user and can read pending bills only.
 
+The v2 `Bot` is created without polling. `integration.js` registers context-based
+command/message/callback middleware; the existing authorization and conversation
+interfaces receive normalized updates, with callback identity from `ctx.from`.
+`api/telegramClient.js` converts the internal transport calls to v2 `bot.api`
+parameter objects. Explicit CLI startup in `server.js` invokes `lifecycle.js`,
+which owns polling, scheduler startup and signal cleanup. Importing these modules
+performs no Telegram requests or timer/polling startup. See [Telegram v2](telegram-v2.md).
+
 The backend runs authentication and authorization before protected routes. Controllers call services and repositories; repositories use parameterized SQL through `pg`. Browser admins have no caller-selected Telegram identity. An actor header is honored only with the bot service credential.
 
 ## Data model
@@ -34,4 +42,4 @@ The canonical schema is `backend/src/db/schema.sql`. Startup applies idempotent 
 
 PostgreSQL persists bills and registration data. Browser sessions and login throttles live in one backend process, and restart resets both. Multiple backend instances need a shared session/rate-limit store before deployment.
 
-Group membership is inferred from recorded observations, not continuously verified against Telegram. Conversation maps remain process-local and keyed by user. Those limitations and the reminder/payment consistency backlog are listed in [development](development.md).
+Group membership is inferred from recorded observations, not continuously verified against Telegram. Flows remain process-local and are keyed by actor, chat and topic, with keyboard revision tokens and a 15-minute lifecycle. Reminders use America/Belem dates and scheduling; delivery history is not durable. Remaining limitations are listed in [development](development.md).

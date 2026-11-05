@@ -62,6 +62,14 @@ export default function AgendaDetailsPage({ id }) {
             <strong>{payment.amount}</strong>
           </div>
           <div>
+            <span>Allocated total</span>
+            <strong>{payment.allocatedAmount}</strong>
+          </div>
+          <div>
+            <span>Rounding surplus</span>
+            <strong>{payment.surplusAmount}</strong>
+          </div>
+          <div>
             <span>Bank</span>
             <strong>{payment.bank}</strong>
           </div>
