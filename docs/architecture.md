@@ -34,4 +34,4 @@ The canonical schema is `backend/src/db/schema.sql`. Startup applies idempotent 
 
 PostgreSQL persists bills and registration data. Browser sessions and login throttles live in one backend process, and restart resets both. Multiple backend instances need a shared session/rate-limit store before deployment.
 
-Group membership is inferred from recorded observations, not continuously verified against Telegram. Conversation maps remain process-local and keyed by user. Those limitations and the reminder/payment consistency backlog are listed in [development](development.md).
+Group membership is inferred from recorded observations, not continuously verified against Telegram. Flows remain process-local and are keyed by actor, chat and topic, with keyboard revision tokens and a 15-minute lifecycle. Reminders use America/Belem dates and scheduling; delivery history is not durable. Remaining limitations are listed in [development](development.md).
