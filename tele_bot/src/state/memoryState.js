@@ -210,4 +210,13 @@ export class ConversationFlows {
   async clearUser(actorId) {
     await Promise.all([...this.entries.values()].filter(entry => entry.actorId === actorId).map(entry => this.remove(entry)));
   }
+
+  dispose() {
+    // Shutdown invalidates local state without issuing new Telegram requests.
+    for (const entry of this.entries.values()) {
+      clearTimeout(entry.timer);
+      entry.tokens.clear();
+    }
+    this.entries.clear();
+  }
 }

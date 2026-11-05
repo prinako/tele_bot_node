@@ -1,13 +1,7 @@
-import TelegramBot from 'node-telegram-bot-api';
-import env from './config/env.js';
+import { Bot } from "node-telegram-bot-api";
+import env from "./config/env.js";
 
-/**
- * Creates a new Telegram bot instance.
- *
- * @returns {TelegramBot} The bot instance.
- */
-function createBot() {
-    return new TelegramBot(env.botToken, { polling: true });
+// Construction is side-effect free: init/handleUpdate/startPolling perform getMe.
+export default function createBot({ token = env.botToken, transportOptions } = {}) {
+  return new Bot(token, transportOptions);
 }
-
-export default createBot;

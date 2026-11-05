@@ -45,6 +45,11 @@ scripts that are not shipped in the installable skill; do not run those commands
   in-memory flow state, `schedules` uses `node-cron`, and `api/backendClient.js`
   calls the backend over HTTP. Several command/keyboard/message directories are
   documented extraction destinations, not completed architectural layers.
+  The installed v2 API uses named `Bot`, ordered context middleware and object
+  parameters on `bot.api`. `src/integration.js` registers handlers without startup;
+  `src/lifecycle.js` owns explicit polling, signals and scheduler teardown. Preserve
+  the conversation manager; its internal positional transport interface is adapted
+  by `src/api/telegramClient.js`. See [v2 conventions](docs/telegram-v2.md).
 - `admin_panel/`: React 19/Vite 8 SPA, pages and components, a shared HTTP client
   and CSS. Files containing JSX use `.jsx`; plain JavaScript modules use `.js`.
   Keep imports and the HTML entrypoint aligned with these extensions.

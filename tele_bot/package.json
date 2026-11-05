@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "test:sdk": "node --test test/sdk-integration.test.js test/lifecycle.test.js"
   },
   "dependencies": {
     "dotenv": "^18.0.9",
