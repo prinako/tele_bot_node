@@ -5,10 +5,12 @@ import {
   updateAgendaPayment,
 } from "../api/backendClient.js";
 import Table from "../components/Table.jsx";
+import Badge from "../components/Badge.jsx";
 
 export default function AgendaPage() {
   const [payments, setPayments] = useState([]);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   async function load() {
     setPayments(await getAgendaPayments());
@@ -35,7 +37,8 @@ export default function AgendaPage() {
   }
 
   useEffect(() => {
-    load().catch((err) => setError(err.message));
+    setLoading(true);
+    load().catch((err) => setError(err.message)).finally(() => setLoading(false));
   }, []);
 
   return (
@@ -46,8 +49,9 @@ export default function AgendaPage() {
           <p>Bill records and payment state.</p>
         </div>
       </header>
-      {error && <div className="alert">{error}</div>}
+      {error && <div className="alert" role="alert">{error}</div>}
       <Table
+        loading={loading}
         columns={[
           { key: "title", label: "Title" },
           { key: "date", label: "Due" },
@@ -58,7 +62,8 @@ export default function AgendaPage() {
           {
             key: "isFullyPaid",
             label: "Paid",
-            render: (payment) => payment.isFullyPaid ? "Paid" : "Open",
+            searchValue: (payment) => payment.isFullyPaid ? "Paid" : "Open",
+            render: (payment) => <Badge tone={payment.isFullyPaid ? "success" : "warning"}>{payment.isFullyPaid ? "Paid" : "Open"}</Badge>,
           },
           { key: "senderId", label: "Created By" },
           { key: "createdAt", label: "Created" },
