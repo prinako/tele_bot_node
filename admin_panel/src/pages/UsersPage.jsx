@@ -5,6 +5,7 @@ import Table from "../components/Table.jsx";
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   async function load() {
     setUsers(await getUsers());
@@ -24,7 +25,8 @@ export default function UsersPage() {
   }
 
   useEffect(() => {
-    load().catch((err) => setError(err.message));
+    setLoading(true);
+    load().catch((err) => setError(err.message)).finally(() => setLoading(false));
   }, []);
 
   return (
@@ -35,8 +37,9 @@ export default function UsersPage() {
           <p>Registered Telegram users and access flags.</p>
         </div>
       </header>
-      {error && <div className="alert">{error}</div>}
+      {error && <div className="alert" role="alert">{error}</div>}
       <Table
+        loading={loading}
         columns={[
           { key: "telegramId", label: "Telegram ID" },
           { key: "username", label: "Username" },
@@ -46,9 +49,12 @@ export default function UsersPage() {
           {
             key: "isAllowed",
             label: "Allowed",
+            searchValue: (user) => user.isAllowed ? "Allowed" : "Blocked",
             render: (user) => (
               <button
-                className="ghost"
+                className={`ghost access-toggle ${user.isAllowed ? "is-enabled" : "is-blocked"}`}
+                aria-pressed={user.isAllowed}
+                aria-label={`Allow access for ${user.displayName || user.username || user.telegramId}`}
                 onClick={() => toggle(user, "isAllowed")}
               >
                 {user.isAllowed ? "Allowed" : "Blocked"}
@@ -58,9 +64,12 @@ export default function UsersPage() {
           {
             key: "isAdmin",
             label: "Admin",
+            searchValue: (user) => user.isAdmin ? "Admin" : "User",
             render: (user) => (
               <button
-                className="ghost"
+                className={`ghost access-toggle ${user.isAdmin ? "is-admin" : ""}`}
+                aria-pressed={user.isAdmin}
+                aria-label={`Administrator access for ${user.displayName || user.username || user.telegramId}`}
                 onClick={() => toggle(user, "isAdmin")}
               >
                 {user.isAdmin ? "Admin" : "User"}
