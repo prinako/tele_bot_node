@@ -1,6 +1,6 @@
+import { moneyToCents, formatCents, equalShareCents } from "../utils/money.js";
 import { getClient, query } from "../db/postgres.js";
 import {
-  findUserByTelegramId,
   upsertUser,
 } from "./users.repository.js";
 import {
@@ -70,24 +70,6 @@ function explicitResponsibleUsers(data) {
 }
 
 /**
- * @param {number|string} value - The value to parse as money.
- * @return {number} The parsed money.
- */
-function parseMoney(value) {
-  if (typeof value === "number") {
-    return value;
-  }
-
-  const normalized = String(value ?? "")
-    .replace(/[^\d,.-]/g, "")
-    .replace(/\.(?=\d{3}(\D|$))/g, "")
-    .replace(",", ".");
-
-  const amount = Number(normalized);
-  return Number.isFinite(amount) ? amount : 0;
-}
-
-/**
  * @param {number|string} value - The value to parse as due date.
  * @return {string} The parsed due date.
  */
@@ -112,6 +94,10 @@ function mapAgenda(row) {
   }
 
   const members = Array.isArray(row.members) ? row.members.map(mapMember) : [];
+  const total = moneyToCents(row.total_amount, { allowZero: true });
+  const allocated = members.filter((member) => member.isResponsible !== false)
+    .reduce((sum, member) => sum + moneyToCents(member.amountShare ?? "0", { allowZero: true }), 0n);
+  const surplus = allocated > total ? allocated - total : 0n;
 
   return {
     _id: row.id,
@@ -126,6 +112,8 @@ function mapAgenda(row) {
     amount: row.total_amount === null || row.total_amount === undefined
       ? null
       : String(row.total_amount),
+    allocatedAmount: formatCents(allocated),
+    surplusAmount: formatCents(surplus),
     description: row.description,
     pixKeyId: row.pix_key_id,
     pix: row.pix,
@@ -163,7 +151,7 @@ function buildUpdate(data, columnMap) {
     }
 
     if (field === "amount") {
-      return parseMoney(value);
+      return formatCents(moneyToCents(value));
     }
 
     return value;
@@ -342,7 +330,7 @@ async function getAgendaRow(db, id) {
                         'is_responsible', apm.is_responsible,
                         'is_paid', apm.is_paid,
                         'paid_at', apm.paid_at,
-                        'amount_share', apm.amount_share,
+                        'amount_share', apm.amount_share::text,
                         'created_at', apm.created_at,
                         'updated_at', apm.updated_at
                     )
@@ -374,6 +362,7 @@ async function insetAgendaPayment(data, next) {
   try {
     await db.query("BEGIN");
 
+    const totalCents = moneyToCents(data.amount);
     const creator = await upsertUser(db, data);
     if (data.chatId) {
       const canCreate = await userBelongsToBotInstallationChat(
@@ -432,7 +421,7 @@ async function insetAgendaPayment(data, next) {
         data.topicId ?? null,
         parseDueDate(data.date),
         data.title,
-        parseMoney(data.amount),
+        formatCents(totalCents),
         data.description,
         pixKey.rows[0]?.id ?? null,
         data.pix,
@@ -443,9 +432,7 @@ async function insetAgendaPayment(data, next) {
 
     const agenda = agendaResult.rows[0];
     const responsibleUsers = await resolveResponsibleUsers(db, data, creator);
-    const amountShare = responsibleUsers.length > 0
-      ? parseMoney(data.amount) / responsibleUsers.length
-      : null;
+    const amountShare = formatCents(equalShareCents(totalCents, responsibleUsers.length));
 
     for (const user of responsibleUsers) {
       await db.query(
@@ -604,102 +591,81 @@ async function deleteAgendaPayment(id) {
  */
 async function updateAgendaPayment(id, data, senderId = null) {
   const db = await getClient();
-
   try {
     await db.query("BEGIN");
-
-    if (Object.prototype.hasOwnProperty.call(data, "isPaid")) {
-      const targetTelegramId = data.telegramId || data.senderId || senderId;
-      if (targetTelegramId) {
-        const updated = await setMemberPaid(
-          db,
-          id,
-          targetTelegramId,
-          data.isPaid,
-        );
-        if (!updated) {
-          await db.query("ROLLBACK");
-          return false;
-        }
-      } else {
-        await db.query(
-          `UPDATE agenda_payment_members
-                     SET
-                        is_paid = $2,
-                        paid_at = CASE WHEN $2 THEN NOW() ELSE NULL END,
-                        updated_at = NOW()
-                     WHERE agenda_payment_id = $1
-                       AND is_responsible = TRUE`,
-          [id, data.isPaid],
-        );
-        await updateFullPaymentState(db, id);
-      }
+    // All payment and allocation writes take the parent lock first.
+    const locked = await db.query("SELECT * FROM agenda_payments WHERE id = $1 FOR UPDATE", [id]);
+    const agenda = locked.rows[0];
+    if (!agenda) {
+      await db.query("ROLLBACK");
+      return false;
     }
 
-    if (
-      Array.isArray(data.members) || Array.isArray(data.responsibleUserIds) ||
-      Array.isArray(data.responsibleTelegramIds)
-    ) {
-      const creator = await findUserByTelegramId(
-        db,
-        data.senderId || data.telegramId || senderId,
-      );
-      const agenda = await getAgendaRow(db, id);
-      const members = await resolveResponsibleUsers(
-        db,
-        { ...data, chatId: data.chatId ?? agenda?.chat_id },
-        creator,
-      );
-      const amountShare = members.length > 0
-        ? parseMoney(agenda.total_amount) / members.length
-        : null;
-
-      await db.query(
-        `UPDATE agenda_payment_members
-                 SET
-                    is_responsible = FALSE,
-                    updated_at = NOW()
-                 WHERE agenda_payment_id = $1`,
-        [id],
-      );
-
-      for (const user of members) {
-        await db.query(
-          `INSERT INTO agenda_payment_members (
-                        agenda_payment_id,
-                        user_id,
-                        is_responsible,
-                        amount_share
-                    ) VALUES ($1, $2, TRUE, $3)
-                    ON CONFLICT (agenda_payment_id, user_id)
-                    DO UPDATE SET
-                        is_responsible = TRUE,
-                        amount_share = EXCLUDED.amount_share,
-                        updated_at = NOW()`,
-          [id, user.id, amountShare],
-        );
+    const memberFields = ["members", "responsibleUserIds", "responsibleTelegramIds"];
+    const changingMembers = memberFields.some((field) => Object.hasOwn(data, field));
+    const changingAmount = Object.hasOwn(data, "amount");
+    if (changingMembers || changingAmount) {
+      const paid = await db.query(`SELECT 1 FROM agenda_payment_members
+        WHERE agenda_payment_id = $1 AND is_responsible = TRUE AND is_paid = TRUE LIMIT 1`, [id]);
+      if (paid.rowCount) {
+        throw Object.assign(new Error("Mark all responsible payments unpaid before editing the amount or members"), { status: 409, code: "PAID_SHARE_EDIT" });
       }
-
+      const total = moneyToCents(changingAmount ? data.amount : agenda.total_amount);
+      let members;
+      if (changingMembers) {
+        for (const field of memberFields) {
+          if (Object.hasOwn(data, field) && (!Array.isArray(data[field]) || !data[field].length)) {
+            throw Object.assign(new Error("Select at least one responsible member"), { status: 400 });
+          }
+        }
+        if (!explicitResponsibleUsers(data)?.length) {
+          throw Object.assign(new Error("Invalid responsible members"), { status: 400 });
+        }
+        members = await resolveResponsibleUsers(db, { ...data, chatId: data.chatId ?? agenda.chat_id }, null);
+      } else {
+        const result = await db.query(`SELECT user_id AS id FROM agenda_payment_members
+          WHERE agenda_payment_id = $1 AND is_responsible = TRUE`, [id]);
+        members = result.rows;
+      }
+      const share = formatCents(equalShareCents(total, members.length));
+      if (changingMembers) {
+        await db.query(`UPDATE agenda_payment_members SET is_responsible = FALSE, updated_at = NOW()
+          WHERE agenda_payment_id = $1`, [id]);
+      }
+      for (const user of members) {
+        await db.query(`INSERT INTO agenda_payment_members (agenda_payment_id, user_id, is_responsible, amount_share)
+          VALUES ($1, $2, TRUE, $3)
+          ON CONFLICT (agenda_payment_id, user_id) DO UPDATE SET
+            is_responsible = TRUE, amount_share = EXCLUDED.amount_share, updated_at = NOW()`, [id, user.id, share]);
+      }
       await updateFullPaymentState(db, id);
     }
 
     const update = buildUpdate(data, agendaColumnMap);
     if (update) {
-      await db.query(
-        `UPDATE agenda_payments
-                 SET ${update.setSql}
-                 WHERE id = $${update.values.length + 1}`,
-        [...update.values, id],
-      );
+      await db.query(`UPDATE agenda_payments SET ${update.setSql} WHERE id = $${update.values.length + 1}`, [...update.values, id]);
     }
-
-    const updatedAgenda = await getAgendaRow(db, id);
+    if (Object.hasOwn(data, "isPaid")) {
+      const target = data.telegramId || data.senderId || senderId;
+      if (target) {
+        if (!await setMemberPaid(db, id, target, data.isPaid)) {
+          await db.query("ROLLBACK");
+          return false;
+        }
+      } else {
+        await db.query(`UPDATE agenda_payment_members SET is_paid = $2,
+          paid_at = CASE WHEN $2 THEN NOW() ELSE NULL END, updated_at = NOW()
+          WHERE agenda_payment_id = $1 AND is_responsible = TRUE`, [id, data.isPaid]);
+        await updateFullPaymentState(db, id);
+      }
+    }
+    const updated = await getAgendaRow(db, id);
     await db.query("COMMIT");
-
-    return mapAgenda(updatedAgenda) || false;
+    return mapAgenda(updated) || false;
   } catch (error) {
     await db.query("ROLLBACK");
-    console.error("Error occurred during query:", { code: error.code, status: error.status });
+    if (error.status) throw error;
+    console.error("Error occurred during query:", { code: error.code });
     return false;
   } finally {
     db.release();
