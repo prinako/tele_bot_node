@@ -1,9 +1,7 @@
-import { agendaUsersState, pixState } from "../state/memoryState.js";
-
 const GREETINGS = new Set(["oi", "ola", "olá", "hello", "hi", "hey"]);
 
 function sendGreeting(bot, msg, text) {
-  bot.sendMessage(
+  return bot.sendMessage(
     msg.chat.id,
     text +
       " " +
@@ -17,10 +15,10 @@ function sendGreeting(bot, msg, text) {
   );
 }
 
-function handleGreeting(bot, msg, text) {
+async function handleGreeting(bot, msg, text) {
   try {
     if (GREETINGS.has(text.toLowerCase())) {
-      sendGreeting(bot, msg, text);
+      await sendGreeting(bot, msg, text);
     }
   } catch (error) {
     if (process.env.LOG === "true") {
@@ -29,52 +27,7 @@ function handleGreeting(bot, msg, text) {
   }
 }
 
-function syncAgendaStageTracker(userId) {
-  const agenda = agendaUsersState[userId];
-  if (!agenda) {
-    return;
-  }
-
-  if (agenda.stage === "title" || agenda.stage === "newPix") {
-    agenda.stageTracker = true;
-  }
-}
-
-function handleAgendaResponse(userId, msg) {
-  syncAgendaStageTracker(userId);
-
-  const agenda = agendaUsersState[userId];
-  if (!agenda?.stageTracker) {
-    return;
-  }
-
-  const isCompleted = agenda.handleResponse(msg);
-  if (isCompleted) {
-    delete agendaUsersState[userId];
-  }
-}
-
-function handlePixResponse(userId, msg) {
-  const pix = pixState[userId];
-  if (!pix?.isStagePixChave) {
-    return;
-  }
-
-  const isCompleted = pix.handleResponse(msg);
-  if (isCompleted) {
-    delete pixState[userId];
-  }
-}
-
-export function handleUserMessage(bot, msg) {
-  const text = msg.text;
-
-
-  if (!text || text === "/cancel" || !msg.from?.id) {
-    return;
-  }
-
-  handleGreeting(bot, msg, text);
-  handleAgendaResponse(msg.from.id, msg);
-  handlePixResponse(msg.from.id, msg);
+export async function handleUserMessage(bot, msg, flows) {
+  if (!msg.text || msg.text.startsWith("/") || !msg.from?.id) return;
+  if (!await flows.message(msg)) await handleGreeting(bot, msg, msg.text);
 }
